@@ -1,0 +1,117 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|f:\\tom\\music\\ljs\\camera automation project\\camctl host test sw\\camctltestapp\\camctltestapp\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|f:\\tom\\music\\ljs\\camera automation project\\camctl host test sw\\camctltestapp\\camctltestapp\\camctltestapp.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|",
+      "RelativeMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|solutionrelative:camctltestapp.csproj||{04B8AB82-A572-4FEF-95CE-5222444B6B64}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|f:\\tom\\music\\ljs\\camera automation project\\camctl host test sw\\camctltestapp\\camctltestapp\\camctltestapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|solutionrelative:camctltestapp.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|f:\\tom\\music\\ljs\\camera automation project\\camctl host test sw\\camctltestapp\\camctltestapp\\form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|solutionrelative:form1.designer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|f:\\tom\\music\\ljs\\camera automation project\\camctl host test sw\\camctltestapp\\camctltestapp\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{CBA9C1B0-6ADC-47B6-8242-9FE9EB5BA6F1}|CamCtlTestApp.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 50,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{b1e99781-ab81-11d0-b683-00aa00a3ee26}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 350,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CamCtlTestApp",
+              "DocumentMoniker": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\CamCtlTestApp.csproj",
+              "RelativeDocumentMoniker": "CamCtlTestApp.csproj",
+              "ToolTip": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\CamCtlTestApp.csproj",
+              "RelativeToolTip": "CamCtlTestApp.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-04-04T22:59:16.214Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CamCtlTestApp",
+              "DocumentMoniker": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\CamCtlTestApp.csproj",
+              "RelativeDocumentMoniker": "CamCtlTestApp.csproj",
+              "ToolTip": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\CamCtlTestApp.csproj",
+              "RelativeToolTip": "CamCtlTestApp.csproj",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-04-04T23:12:28.447Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.Designer.cs",
+              "DocumentMoniker": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.Designer.cs",
+              "RelativeDocumentMoniker": "Form1.Designer.cs",
+              "ToolTip": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.Designer.cs",
+              "RelativeToolTip": "Form1.Designer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-04T22:30:40.551Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.cs*",
+              "RelativeToolTip": "Form1.cs*",
+              "ViewState": "AgIAAFUAAAAAAAAAAAAqwHYAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-04T22:10:01.803Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Form1.cs [Design]",
+              "DocumentMoniker": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "F:\\Tom\\music\\LJS\\Camera Automation Project\\CamCtl Host Test SW\\CamCtlTestApp\\CamCtlTestApp\\Form1.cs [Design]*",
+              "RelativeToolTip": "Form1.cs [Design]*",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-04T22:03:25.165Z",
+              "EditorCaption": " [Design]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

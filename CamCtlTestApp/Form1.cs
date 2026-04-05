@@ -8,22 +8,26 @@ namespace CamCtlTestApp
 
     public partial class MainForm : Form
     {
-        public static string ZOOM_IN_STR = "<2802>";
-        public static string ZOOM_OUT_STR = "<2812>";
-        public static string START_MARKER_RCVD_CODE = "FE";
-        public static int CMD_START_MARKER_IDX = 0;
-        public static int RSP_START_MARKER_RCVD_CODE_IDX = 0;
-        public static string DATA_CHAR_RCVD_CODE = "AA";
-        public static int RSP_DATA_RCVD_CODE_IDX = 2;
-        public static int CMD_DATA_IDX = 1;
-        public static string END_MARKER_RCVD_CODE = "EF";
-        public static int RSP_END_MARKER_RCVD_CODE_IDX = 10;
-        public static int CMD_END_MARKER_IDX = 5;
-        public static int MAX_CHAR_BUF_SIZE = 16;
-        public static int NUM_CMD_CHARS = 6;
-        public static int NUM_RSP_CHARS = 12;
-        public static int NUM_CODE_CHARS = 2;
-        // FEAAAAAAAAEF
+        // codes
+        public static string ZOOM_IN_STR                    = "<2802>";
+        public static string ZOOM_OUT_STR                   = "<2812>";
+        public static string START_MARKER_RCVD_CODE         = "FE";
+        public static string DATA_CHAR_RCVD_CODE            = "AA";
+        public static string END_MARKER_RCVD_CODE           = "EF";
+        // Indices
+        public static int CMD_START_MARKER_IDX              = 0;
+        public static int RSP_START_MARKER_RCVD_CODE_IDX    = 0;
+        public static int RSP_DATA_RCVD_CODE_IDX            = 2;
+        public static int CMD_DATA_IDX                      = 1;
+        public static int RSP_END_MARKER_RCVD_CODE_IDX      = 10;
+        public static int CMD_END_MARKER_IDX                = 5;
+        // Sizes
+        public static int MAX_CHAR_BUF_SIZE                 = 16;
+        public static int NUM_CMD_CHARS                     = 6;
+        public static int NUM_RSP_CHARS                     = 12;
+        public static int NUM_CODE_CHARS                    = 2;
+        // Expected return string: FEAAAAAAAAEF
+
         private char[] cmdBuf = new char[MAX_CHAR_BUF_SIZE];
         private char[] rspBuf = new char[MAX_CHAR_BUF_SIZE];
 
@@ -112,8 +116,7 @@ namespace CamCtlTestApp
                     {
                         currRspCode = rspArray[0..2];
                         STXCode = START_MARKER_RCVD_CODE.ToCharArray();
-                        bool areEqual = new string(currRspCode) == new string(STXCode);
-                        success = (areEqual) ? true : false;
+                        success = (charArraysAreEqual(currRspCode, STXCode)) ? true : false;
                         if (!success)
                         {
                             return false;
@@ -127,7 +130,7 @@ namespace CamCtlTestApp
                         {
                             currRspCode = rspArray[2..10];
                             DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
-                            success = (currRspCode == STXCode);
+                            success = (charArraysAreEqual(currRspCode, DataCode)) ? true : false;
                             if (!success)
                             {
                                 return false;
@@ -140,7 +143,7 @@ namespace CamCtlTestApp
                             {
                                 currRspCode = rspArray[10..];
                                 ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
-                                success = (currRspCode == ETXCode);
+                                success = (charArraysAreEqual(currRspCode, ETXCode)) ? true : false;
                                 if (!success)
                                 {
                                     return false;
@@ -161,6 +164,12 @@ namespace CamCtlTestApp
             // Ensure every path returns a bool
             return false;
         }
+
+        private bool charArraysAreEqual(char[] currRspCode, char[] referenceCode)
+        {
+            return (new string(currRspCode) == new string(referenceCode));
+        }
+
         private bool SendCam1ZoomOutCmd()
         {
             char[] rspArray = new char[NUM_RSP_CHARS];

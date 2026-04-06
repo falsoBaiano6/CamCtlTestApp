@@ -1,5 +1,6 @@
 using System;
 using System.IO.Ports;
+using System.Security.Cryptography;
 
 
 namespace CamCtlTestApp
@@ -9,127 +10,111 @@ namespace CamCtlTestApp
     public partial class MainForm : Form
     {
         // codes
-        public static string ZOOM_IN_STR                    = "<2802>";
-        public static string ZOOM_OUT_STR                   = "<2812>";
-        public static string START_MARKER_RCVD_CODE         = "FE";
-        public static string DATA_CHAR_RCVD_CODE            = "AA";
-        public static string END_MARKER_RCVD_CODE           = "EF";
+        public static string CAM1_STR = "CAM1";
+        public static string CAM2_STR = "CAM2";
+        public static string CAM3_STR = "CAM3";
+        public static string ZOOM_IN_STR = "<2802>";
+        public static string ZOOM_OUT_STR = "<2812>";
+        public static string START_MARKER_RCVD_CODE = "FE";
+        public static string DATA_CHAR_RCVD_CODE = "AA";
+        public static string END_MARKER_RCVD_CODE = "EF";
+        public static string HOST_LISTENING_CODE = "!";
         // Indices
-        public static int CMD_START_MARKER_IDX              = 0;
-        public static int RSP_START_MARKER_RCVD_CODE_IDX    = 0;
-        public static int RSP_DATA_RCVD_CODE_IDX            = 2;
-        public static int CMD_DATA_IDX                      = 1;
-        public static int RSP_END_MARKER_RCVD_CODE_IDX      = 10;
-        public static int CMD_END_MARKER_IDX                = 5;
+        public static int CMD_START_MARKER_IDX = 0;
+        public static int RSP_START_MARKER_RCVD_CODE_IDX = 0;
+        public static int RSP_DATA_RCVD_CODE_IDX = 2;
+        public static int CMD_DATA_IDX = 1;
+        public static int RSP_END_MARKER_RCVD_CODE_IDX = 10;
+        public static int CMD_END_MARKER_IDX = 5;
         // Sizes
-        public static int MAX_CHAR_BUF_SIZE                 = 16;
-        public static int NUM_CMD_CHARS                     = 6;
-        public static int NUM_RSP_CHARS                     = 12;
-        public static int NUM_CODE_CHARS                    = 2;
+        public static int MAX_CHAR_BUF_SIZE = 16;
+        public static int NUM_CMD_CHARS = 6;
+        public static int NUM_RSP_CHARS = 12;
+        public static int NUM_CODE_CHARS = 2;
         // Expected return string: FEAAAAAAAAEF
 
-        private char[] cmdBuf = new char[MAX_CHAR_BUF_SIZE];
-        private char[] rspBuf = new char[MAX_CHAR_BUF_SIZE];
-
         public SerialPort camPort;
+        private bool isUcPowerCycled = false;
 
         public MainForm()
         {
             InitializeComponent();
-            camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
-
+            textBoxPrereqResponse.Text = "Select 'Initialize Mirocontroller and Communication' before operating functions...";
         }
 
-
-        private void checkBoxCam1ZoomIn_CheckedChanged(object sender, EventArgs e)
+        ~MainForm()
         {
-            if (checkBoxCam1ZoomIn.Checked)
-            {
-                if (checkBoxCam1ZoomOut.Checked)
-                {
-                    checkBoxCam1ZoomIn.Checked = false;
-                }
-                else
-                {
-                    checkBoxCam1ZoomIn.Checked = true;
-                    if(!(SendCam1ZoomInCmd()))   
-                    {
-                        MessageBox.Show("Failed to send Zoom In Command or receive valid response.");
-
-                    }
-                }
-            }
-            else
-            {
-                checkBoxCam1ZoomIn.Checked = false;
-            }
+            // Cleanup code for unmanaged resources
+            camPort.Close();
         }
 
-        private void checkBoxCam1ZoomOut_CheckedChanged(object sender, EventArgs e)
+        public void FlushRxBuffer()
         {
-            if (checkBoxCam1ZoomOut.Checked)
-            {
-                if(checkBoxCam1ZoomIn.Checked)
-                {
-                    checkBoxCam1ZoomOut.Checked = false;
-                }
-                else
-                {
-                    checkBoxCam1ZoomOut.Checked = true;
-                    if (!(SendCam1ZoomOutCmd()))
-                    {
-                        MessageBox.Show("Failed to send Zoom In Command or receive valid response.");
-
-                    }
-                }
-            }
-            else
-            {
-                checkBoxCam1ZoomOut.Checked = false;
-            }
+            camPort.DiscardInBuffer();
+        }
+        private bool charArraysAreEqual(char[] currRspCode, char[] referenceCode)
+        {
+            return (new string(currRspCode) == new string(referenceCode));
         }
 
-        private bool SendCam1ZoomInCmd()
+        private bool SendZoomCmd(string cameraStr, string zoomDirectionStr)
         {
             char[] rspArray = new char[NUM_RSP_CHARS];
+            bool success = false;
+            char cmdChar;
+            char rspChar;
+            char[] currRspCode = new char[NUM_CODE_CHARS];
+            char[] STXCode = new char[NUM_CODE_CHARS];
+            char[] DataCode = new char[NUM_CODE_CHARS];
+            char[] ETXCode = new char[NUM_CODE_CHARS];
+
+
+            textBoxResponseString.Text = ""; // Clear response string text box before sending command
+            textBoxCmdString.Text = ""; // Clear command string text box before sending command
+
+            // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
+            FlushRxBuffer();
+
+
+
             for (int i = 0; i < NUM_CMD_CHARS; i++)
             {
-                bool success = false;
-                char cmd = ZOOM_IN_STR[i];
-                char rspChar;
-                camPort.Open();
-                camPort.Write(cmd.ToString());
-                char[] currRspCode = new char[NUM_CODE_CHARS];
-                
-                char[] STXCode = new char[NUM_CODE_CHARS];
-                char[] DataCode = new char[NUM_CODE_CHARS];
-                char[] ETXCode = new char[NUM_CODE_CHARS];
+                success = false;
+                cmdChar = zoomDirectionStr[i];
+
+                // Send current command char...
+                camPort.Write(cmdChar.ToString());
+                textBoxCmdString.Text += cmdChar;
+
                 // wait for response char
-                for (int j = 0; j < NUM_RSP_CHARS; j++)
+                for (int j = 0; j < NUM_CODE_CHARS; j++)
                 {
                     while (camPort.BytesToRead == 0) { };
                     rspChar = (char)camPort.ReadChar();
-                    rspArray[j] = rspChar;
+                    currRspCode[j] = rspChar;
+
 
                     // start marker
-                    if ((i == CMD_START_MARKER_IDX) && (j == RSP_DATA_RCVD_CODE_IDX - 1))
+                    if ((i == CMD_START_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
                     {
-                        currRspCode = rspArray[0..2];
+                        Array.Copy(currRspCode, 0, rspArray, RSP_START_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
                         STXCode = START_MARKER_RCVD_CODE.ToCharArray();
+                        textBoxResponseString.Text += new string(currRspCode);
                         success = (charArraysAreEqual(currRspCode, STXCode)) ? true : false;
                         if (!success)
                         {
                             return false;
                         }
                     }
-
+                    // Indices
                     else
                     {
                         // data characters
-                        if ((i > CMD_START_MARKER_IDX) && (i < CMD_END_MARKER_IDX) && (j >= RSP_DATA_RCVD_CODE_IDX) && j < RSP_END_MARKER_RCVD_CODE_IDX)
+                        if ((i > CMD_START_MARKER_IDX) && (i < CMD_END_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
                         {
-                            currRspCode = rspArray[2..10];
+                            Array.Copy(currRspCode, 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
                             DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
+                            textBoxResponseString.Text += new string(currRspCode);
                             success = (charArraysAreEqual(currRspCode, DataCode)) ? true : false;
                             if (!success)
                             {
@@ -139,10 +124,11 @@ namespace CamCtlTestApp
                         else
                         // end marker
                         {
-                            if ((i == CMD_END_MARKER_IDX) && (j == RSP_END_MARKER_RCVD_CODE_IDX + 1))
+                            if ((i == CMD_END_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
                             {
-                                currRspCode = rspArray[10..];
+                                Array.Copy(currRspCode, 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
                                 ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
+                                textBoxResponseString.Text += new string(currRspCode);
                                 success = (charArraysAreEqual(currRspCode, ETXCode)) ? true : false;
                                 if (!success)
                                 {
@@ -164,73 +150,112 @@ namespace CamCtlTestApp
             // Ensure every path returns a bool
             return false;
         }
-
-        private bool charArraysAreEqual(char[] currRspCode, char[] referenceCode)
+        public void InitializeMicroAndComms()
         {
-            return (new string(currRspCode) == new string(referenceCode));
+            camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
+            camPort.Open();
+            camPort.Write(HOST_LISTENING_CODE);
+            // wait for initialization string from Arduino
+            while (camPort.BytesToRead == 0) { };
+            textBoxResponseString.Text = camPort.ReadLine().ToString();
         }
 
-        private bool SendCam1ZoomOutCmd()
+        // UI Event Handlers
+        private void checkBoxCam1ZoomIn_CheckedChanged(object sender, EventArgs e)
         {
-            char[] rspArray = new char[NUM_RSP_CHARS];
-            for (int i = 0; i < NUM_CMD_CHARS; i++)
+            if (checkBoxCam1ZoomIn.Checked)
             {
-                char cmd = ZOOM_OUT_STR[i];
-                char rspChar;
-                camPort.Open();
-                camPort.Write(cmd.ToString());
-                // wait for response char
-                for (int j = 0; j < NUM_RSP_CHARS; j++)
+                if (checkBoxCam1ZoomOut.Checked)
                 {
-                    while (camPort.BytesToRead == 0) { }
-                    ;
-                    rspChar = (char)camPort.ReadChar();
-                    rspArray[i] = rspChar;
-
-                    // start marker
-                    if ((i == CMD_START_MARKER_IDX) && (j == RSP_DATA_RCVD_CODE_IDX - 1))
+                    checkBoxCam1ZoomIn.Checked = false;
+                }
+                else
+                {
+                    checkBoxCam1ZoomIn.Checked = true;
+                    if (!(isUcPowerCycled))
                     {
-                        if (!(rspArray[0..2] == START_MARKER_RCVD_CODE.ToCharArray()))
-                        {
-                            return false;
-                        }
+                        MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                        checkBoxCam1ZoomIn.Checked = false;
+                        return;
                     }
+                    if (!(SendZoomCmd("CAM1", ZOOM_IN_STR)))
+                    {
+                        MessageBox.Show("Send Zoom In Command Failed.");
+                        checkBoxCam1ZoomIn.Checked = false;
+                        return;
 
+                    }
+                    else 
+                    {
+                        // Command succeeded
+                        checkBoxCam1ZoomIn.Checked = false;
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                // Unchecking the box will not send a command, it simply allows the user to select the function again if desired
+            }
+        }
+
+        private void checkBoxCam1ZoomOut_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBoxCam1ZoomOut.Checked)
+            {
+                if (checkBoxCam1ZoomIn.Checked)
+                {
+                    checkBoxCam1ZoomOut.Checked = false;
+                }
+                else
+                {
+                    checkBoxCam1ZoomOut.Checked = true;
+                    if(!(isUcPowerCycled))
+                    {
+                        MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                        checkBoxCam1ZoomOut.Checked = false;
+                        return;
+
+                    }
+                    if (!(SendZoomCmd("CAM1", ZOOM_OUT_STR)))
+                    {
+                        MessageBox.Show("Send Zoom Out Command Failed.");
+                        checkBoxCam1ZoomOut.Checked = false;
+                        return;
+                    }
                     else
                     {
-                        // data characters
-                        if ((i > CMD_START_MARKER_IDX) && (i < CMD_END_MARKER_IDX) && (j >= RSP_DATA_RCVD_CODE_IDX) && j < RSP_END_MARKER_RCVD_CODE_IDX)
-                        {
-                            if (!(rspArray[2..10] == DATA_CHAR_RCVD_CODE.ToCharArray()))
-                            {
-                                return false;
-                            }
-                        }
-                        else
-                        // end marker
-                        {
-                            if ((i == CMD_END_MARKER_IDX) && (j == RSP_END_MARKER_RCVD_CODE_IDX + 1))
-                            {
-                                if (!(rspArray[0..2] == START_MARKER_RCVD_CODE.ToCharArray()))
-                                {
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                return true;
-                            }
-                        }
+                        // Command succeeded
+                        checkBoxCam1ZoomOut.Checked = false;
+                        return;
 
                     }
-
                 }
-
             }
+            else
+            {
+                // Unchecking the box will not send a command, it simply allows the user to select the function again if desired
+            }
+        }
 
-            // Ensure every path returns a bool
-            return false;
+        private void checkBoxInitializeMicro_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBoxInitializeMicro.Checked)
+            {
+               textBoxPrereqResponse.Text = "Cycle Power to Microcontroller... Check uC power cycle complete? box when completed";
+             }
+        }
 
+        private void checkBoxUcPwrCycleComplete_CheckedChanged(object sender, EventArgs e)
+        {
+            if(checkBoxUcPwrCycleComplete.Checked)
+            {
+                isUcPowerCycled = true; 
+                InitializeMicroAndComms();
+                textBoxPrereqResponse.Text = "Microcontroller Power Cycle complete... COM Port initialized";
+                checkBoxInitializeMicro.Checked = false;
+                checkBoxUcPwrCycleComplete.Checked = false;
+            }
         }
     }
 }

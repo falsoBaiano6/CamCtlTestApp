@@ -35,3 +35,4 @@ F:\Tom\music\LJS\Camera Automation Project\CamCtl Host Test SW\CamCtlTestApp\Cam
 F:\Tom\music\LJS\Camera Automation Project\CamCtl Host Test SW\CamCtlTestApp\CamCtlTestApp\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.IO.Ports.dll
 F:\Tom\music\LJS\Camera Automation Project\CamCtl Host Test SW\CamCtlTestApp\CamCtlTestApp\obj\Debug\net10.0-windows\CamCtlTestApp.csproj.AssemblyReference.cache
 F:\Tom\music\LJS\Camera Automation Project\CamCtl Host Test SW\CamCtlTestApp\CamCtlTestApp\obj\Debug\net10.0-windows\CamCtlTe.48331318.Up2Date
+F:\Tom\music\LJS\Camera Automation Project\CamCtl Host Test SW\CamCtlTestApp\CamCtlTestApp\obj\Debug\net10.0-windows\CamCtlTestApp.sourcelink.json

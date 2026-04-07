@@ -1,6 +1,11 @@
 using System;
+using System.ComponentModel;
+using System.Diagnostics.Metrics;
 using System.IO.Ports;
+using System.Reflection;
 using System.Security.Cryptography;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 
 namespace CamCtlTestApp
@@ -13,8 +18,8 @@ namespace CamCtlTestApp
         public static string CAM1_STR = "CAM1";
         public static string CAM2_STR = "CAM2";
         public static string CAM3_STR = "CAM3";
-        public static string ZOOM_IN_STR = "<2802>";
-        public static string ZOOM_OUT_STR = "<2812>";
+        public static string ZOOM_IN_STR = "<2800>";
+        public static string ZOOM_OUT_STR = "<2810>";
         public static string START_MARKER_RCVD_CODE = "FE";
         public static string DATA_CHAR_RCVD_CODE = "AA";
         public static string END_MARKER_RCVD_CODE = "EF";
@@ -33,29 +38,119 @@ namespace CamCtlTestApp
         public static int NUM_CODE_CHARS = 2;
         // Expected return string: FEAAAAAAAAEF
 
+        // Private members
         public SerialPort camPort;
         private bool isUcPowerCycled = false;
+        private bool cam1ZoomInButtonPressed = false;
+        private bool cam1ZoomOutButtonPressed = false;
+        private BackgroundWorker backgroundWorker1 = new BackgroundWorker();
+        private BackgroundWorker backgroundWorker2 = new BackgroundWorker();
+        string textBoxResponseStringText;
+        string textBoxCmdStringText;
+        string textBoxCmdStringCompleteText;
 
         public MainForm()
         {
             InitializeComponent();
             textBoxPrereqResponse.Text = "Select 'Initialize Mirocontroller and Communication' before operating functions...";
+            InitializeBackgroundWorkers();
         }
 
         ~MainForm()
         {
             // Cleanup code for unmanaged resources
+            backgroundWorker1.CancelAsync();
+            backgroundWorker1.Dispose();
             camPort.Close();
         }
 
         public void FlushRxBuffer()
         {
             camPort.DiscardInBuffer();
+            camPort.BaseStream.Flush();
+
         }
         private bool charArraysAreEqual(char[] currRspCode, char[] referenceCode)
         {
             return (new string(currRspCode) == new string(referenceCode));
         }
+
+        void InitializeBackgroundWorkers()
+        {
+ 
+
+            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
+            backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
+            backgroundWorker1.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker1_ProgressChanged);
+            backgroundWorker1.WorkerSupportsCancellation = true;
+            backgroundWorker1.WorkerReportsProgress = true;
+
+            if (!backgroundWorker1.IsBusy)
+            {
+                backgroundWorker1.RunWorkerAsync();
+            }
+        }
+
+        void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        {
+            // Get the BackgroundWorker that raised this event.
+            BackgroundWorker worker = sender as BackgroundWorker;
+
+            while(true)
+            {
+                if (cam1ZoomInButtonPressed)
+                {
+                    if (!(SendZoomCmd("CAM1", ZOOM_IN_STR)))
+                    {
+                        MessageBox.Show("Send Zoom In Command Failed.");
+                        cam1ZoomInButtonPressed = false;
+                        buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                        return;
+                    }
+                    else
+                    {
+                        // Succeeded -- Update textBoxCmdString in UI
+                        backgroundWorker1.ReportProgress(0, "");
+                        backgroundWorker1.ReportProgress(0, textBoxResponseStringText);
+                    }
+                }
+
+                if (cam1ZoomOutButtonPressed)
+                {
+                    if (!(SendZoomCmd("CAM1", ZOOM_OUT_STR)))
+                    {
+                        MessageBox.Show("Send Zoom Out Command Failed.");
+                        cam1ZoomOutButtonPressed = false;
+                        buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                        return;
+                    }
+                    else
+                    {
+                        // Succeeded -- Update textBoxResponseString in UI
+                        backgroundWorker1.ReportProgress(0, "");
+                        backgroundWorker1.ReportProgress(0, textBoxResponseStringText);
+                    }
+                }
+            }
+        }
+        void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+            {
+                // First, handle the case where an exception was thrown.
+                if (e.Error != null)
+                {
+                    _ = MessageBox.Show(e.Error.Message);
+                }
+                else if (e.Cancelled)
+                {
+                }
+                else
+                {
+                }
+        }
+        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            this.textBoxResponseString.Text = (string)e.UserState;
+        } 
 
         private bool SendZoomCmd(string cameraStr, string zoomDirectionStr)
         {
@@ -68,15 +163,13 @@ namespace CamCtlTestApp
             char[] DataCode = new char[NUM_CODE_CHARS];
             char[] ETXCode = new char[NUM_CODE_CHARS];
 
-
-            textBoxResponseString.Text = ""; // Clear response string text box before sending command
-            textBoxCmdString.Text = ""; // Clear command string text box before sending command
+            textBoxResponseStringText = "";
+            textBoxCmdStringText = "";
 
             // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
             FlushRxBuffer();
 
-
-
+    
             for (int i = 0; i < NUM_CMD_CHARS; i++)
             {
                 success = false;
@@ -84,12 +177,14 @@ namespace CamCtlTestApp
 
                 // Send current command char...
                 camPort.Write(cmdChar.ToString());
-                textBoxCmdString.Text += cmdChar;
+
+                textBoxCmdStringText += cmdChar;
 
                 // wait for response char
                 for (int j = 0; j < NUM_CODE_CHARS; j++)
                 {
-                    while (camPort.BytesToRead == 0) { };
+                    while (camPort.BytesToRead == 0) { }
+                    ;
                     rspChar = (char)camPort.ReadChar();
                     currRspCode[j] = rspChar;
 
@@ -99,7 +194,7 @@ namespace CamCtlTestApp
                     {
                         Array.Copy(currRspCode, 0, rspArray, RSP_START_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
                         STXCode = START_MARKER_RCVD_CODE.ToCharArray();
-                        textBoxResponseString.Text += new string(currRspCode);
+                        textBoxResponseStringText += new string(currRspCode);
                         success = (charArraysAreEqual(currRspCode, STXCode)) ? true : false;
                         if (!success)
                         {
@@ -114,7 +209,7 @@ namespace CamCtlTestApp
                         {
                             Array.Copy(currRspCode, 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
                             DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
-                            textBoxResponseString.Text += new string(currRspCode);
+                            textBoxResponseStringText += new string(currRspCode);
                             success = (charArraysAreEqual(currRspCode, DataCode)) ? true : false;
                             if (!success)
                             {
@@ -128,7 +223,8 @@ namespace CamCtlTestApp
                             {
                                 Array.Copy(currRspCode, 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
                                 ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
-                                textBoxResponseString.Text += new string(currRspCode);
+                                textBoxResponseStringText += new string(currRspCode);
+                                textBoxCmdStringCompleteText = textBoxCmdStringText;
                                 success = (charArraysAreEqual(currRspCode, ETXCode)) ? true : false;
                                 if (!success)
                                 {
@@ -150,14 +246,43 @@ namespace CamCtlTestApp
             // Ensure every path returns a bool
             return false;
         }
-        public void InitializeMicroAndComms()
+
+
+        public bool InitializeMicroAndComms()
         {
-            camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
-            camPort.Open();
+            //camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
+            try
+            {
+                camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
+
+                camPort.Open();
+                // If execution reaches here, the port is open.
+            }
+            catch (Exception ex)
+            {
+                // Handle specific exceptions like UnauthorizedAccessException here.
+                MessageBox.Show("COM Port Initialization Failed." + ex.Message);
+                //Console.WriteLine("Error opening port: " + ex.Message);
+                return false;
+            }
             camPort.Write(HOST_LISTENING_CODE);
             // wait for initialization string from Arduino
+            Thread.Sleep(500);
+            if(camPort.BytesToRead == 0)
+            {
+                MessageBox.Show("No response from microcontroller. Please check connection and ensure microcontroller is properly initialized.");
+                //Console.WriteLine("Error communicating with micro: ");
+
+                return false;
+            }
             while (camPort.BytesToRead == 0) { };
             textBoxResponseString.Text = camPort.ReadLine().ToString();
+            if (textBoxResponseString.Text.Length == 0)
+            {
+
+                return false;
+            }
+            return true;
         }
 
         // UI Event Handlers
@@ -185,7 +310,7 @@ namespace CamCtlTestApp
                         return;
 
                     }
-                    else 
+                    else
                     {
                         // Command succeeded
                         checkBoxCam1ZoomIn.Checked = false;
@@ -210,7 +335,7 @@ namespace CamCtlTestApp
                 else
                 {
                     checkBoxCam1ZoomOut.Checked = true;
-                    if(!(isUcPowerCycled))
+                    if (!(isUcPowerCycled))
                     {
                         MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
                         checkBoxCam1ZoomOut.Checked = false;
@@ -242,20 +367,71 @@ namespace CamCtlTestApp
         {
             if (checkBoxInitializeMicro.Checked)
             {
-               textBoxPrereqResponse.Text = "Cycle Power to Microcontroller... Check uC power cycle complete? box when completed";
-             }
+                textBoxPrereqResponse.Text = "Cycle Power to Microcontroller... Check uC power cycle complete? box when completed";
+            }
         }
 
         private void checkBoxUcPwrCycleComplete_CheckedChanged(object sender, EventArgs e)
         {
-            if(checkBoxUcPwrCycleComplete.Checked)
+            if (checkBoxUcPwrCycleComplete.Checked)
             {
-                isUcPowerCycled = true; 
-                InitializeMicroAndComms();
-                textBoxPrereqResponse.Text = "Microcontroller Power Cycle complete... COM Port initialized";
+                isUcPowerCycled = true;
+                if(!InitializeMicroAndComms())
+                {
+                    textBoxPrereqResponse.Text = "Microcontroller Power Cycle complete... COM Port initialized";
+
+
+                }
+
+                textBoxPrereqResponse.Text = "Microcontroller communication failed";
                 checkBoxInitializeMicro.Checked = false;
                 checkBoxUcPwrCycleComplete.Checked = false;
             }
+        }
+
+        private void buttonCam1ZoomIn_Click(object sender, EventArgs e)
+        {
+            if ((cam1ZoomInButtonPressed == false) && (cam1ZoomOutButtonPressed == false))
+            {
+                cam1ZoomInButtonPressed = true;
+                buttonCam1ZoomIn.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    cam1ZoomInButtonPressed = false;
+                    buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                cam1ZoomInButtonPressed = false;
+                buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+
+        private void buttonCam1ZoomOut_Click(object sender, EventArgs e)
+        {
+            if ((cam1ZoomOutButtonPressed == false) && (cam1ZoomInButtonPressed == false))
+            {
+                cam1ZoomOutButtonPressed = true;
+                buttonCam1ZoomOut.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    cam1ZoomOutButtonPressed = false;
+                    buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                cam1ZoomOutButtonPressed = false;
+                buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+
         }
     }
 }

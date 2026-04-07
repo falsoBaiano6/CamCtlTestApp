@@ -1,4 +1,6 @@
-﻿namespace CamCtlTestApp
+﻿using System.ComponentModel;
+
+namespace CamCtlTestApp
 {
     partial class MainForm
     {
@@ -37,6 +39,8 @@
             labelCommandString = new Label();
             checkBoxInitializeMicro = new CheckBox();
             groupBoxFunctions = new GroupBox();
+            buttonCam1ZoomOut = new Button();
+            buttonCam1ZoomIn = new Button();
             groupBoxPrerequisites = new GroupBox();
             textBoxPrereqResponse = new TextBox();
             checkBoxUcPwrCycleComplete = new CheckBox();
@@ -87,11 +91,11 @@
             textBoxResponseString.Size = new Size(739, 23);
             textBoxResponseString.TabIndex = 3;
             // 
-            // textBoxCurRspCode
+            // textBoxCmdString
             // 
             textBoxCmdString.BorderStyle = BorderStyle.FixedSingle;
             textBoxCmdString.Location = new Point(19, 211);
-            textBoxCmdString.Name = "textBoxCurRspCode";
+            textBoxCmdString.Name = "textBoxCmdString";
             textBoxCmdString.ReadOnly = true;
             textBoxCmdString.Size = new Size(739, 23);
             textBoxCmdString.TabIndex = 4;
@@ -130,6 +134,8 @@
             // 
             // groupBoxFunctions
             // 
+            groupBoxFunctions.Controls.Add(buttonCam1ZoomOut);
+            groupBoxFunctions.Controls.Add(buttonCam1ZoomIn);
             groupBoxFunctions.Controls.Add(checkBoxCam1ZoomIn);
             groupBoxFunctions.Controls.Add(checkBoxCam1ZoomOut);
             groupBoxFunctions.Controls.Add(labelCommandString);
@@ -142,6 +148,28 @@
             groupBoxFunctions.TabIndex = 8;
             groupBoxFunctions.TabStop = false;
             groupBoxFunctions.Text = "Functions";
+            // 
+            // buttonCam1ZoomOut
+            // 
+            buttonCam1ZoomOut.Font = new Font("Segoe UI", 18F);
+            buttonCam1ZoomOut.Location = new Point(513, 31);
+            buttonCam1ZoomOut.Name = "buttonCam1ZoomOut";
+            buttonCam1ZoomOut.Size = new Size(220, 40);
+            buttonCam1ZoomOut.TabIndex = 8;
+            buttonCam1ZoomOut.Text = "Cam 1 Zoom Out";
+            buttonCam1ZoomOut.UseVisualStyleBackColor = true;
+            buttonCam1ZoomOut.Click += buttonCam1ZoomOut_Click;
+            // 
+            // buttonCam1ZoomIn
+            // 
+            buttonCam1ZoomIn.Font = new Font("Segoe UI", 18F);
+            buttonCam1ZoomIn.Location = new Point(242, 31);
+            buttonCam1ZoomIn.Name = "buttonCam1ZoomIn";
+            buttonCam1ZoomIn.Size = new Size(193, 40);
+            buttonCam1ZoomIn.TabIndex = 7;
+            buttonCam1ZoomIn.Text = "Cam 1 Zoom In";
+            buttonCam1ZoomIn.UseVisualStyleBackColor = true;
+            buttonCam1ZoomIn.Click += buttonCam1ZoomIn_Click;
             // 
             // groupBoxPrerequisites
             // 
@@ -207,5 +235,8 @@
         private GroupBox groupBoxPrerequisites;
         private CheckBox checkBoxUcPwrCycleComplete;
         private TextBox textBoxPrereqResponse;
+        private Button buttonCam1ZoomIn;
+        private Button buttonCam1ZoomOut;
+
     }
 }

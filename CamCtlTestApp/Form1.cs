@@ -18,8 +18,8 @@ namespace CamCtlTestApp
         public static string CAM1_STR = "CAM1";
         public static string CAM2_STR = "CAM2";
         public static string CAM3_STR = "CAM3";
-        public static string ZOOM_IN_STR = "<12800>";
-        public static string ZOOM_OUT_STR = "<12810>";
+        public static string ZOOM_IN_STR = "<12802>";
+        public static string ZOOM_OUT_STR = "<12812>";
         public static string START_MARKER_RCVD_CODE = "FE";
         public static string CAM_ID_RCVD_CODE = "@";
         public static string DATA_CHAR_RCVD_CODE = "AA";

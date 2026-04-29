@@ -31,8 +31,6 @@ namespace CamCtlTestApp
         private void InitializeComponent()
         {
             label1 = new Label();
-            checkBoxCam1ZoomIn = new CheckBox();
-            checkBoxCam1ZoomOut = new CheckBox();
             textBoxResponseString = new TextBox();
             textBoxCmdString = new TextBox();
             labelResponseString = new Label();
@@ -57,30 +55,6 @@ namespace CamCtlTestApp
             label1.Size = new Size(550, 47);
             label1.TabIndex = 0;
             label1.Text = "Cam Ctl Test App -- Main Window";
-            // 
-            // checkBoxCam1ZoomIn
-            // 
-            checkBoxCam1ZoomIn.AutoSize = true;
-            checkBoxCam1ZoomIn.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            checkBoxCam1ZoomIn.Location = new Point(6, 31);
-            checkBoxCam1ZoomIn.Name = "checkBoxCam1ZoomIn";
-            checkBoxCam1ZoomIn.Size = new Size(159, 29);
-            checkBoxCam1ZoomIn.TabIndex = 1;
-            checkBoxCam1ZoomIn.Text = "Cam 1 Zoom In";
-            checkBoxCam1ZoomIn.UseVisualStyleBackColor = true;
-            checkBoxCam1ZoomIn.CheckedChanged += checkBoxCam1ZoomIn_CheckedChanged;
-            // 
-            // checkBoxCam1ZoomOut
-            // 
-            checkBoxCam1ZoomOut.AutoSize = true;
-            checkBoxCam1ZoomOut.Font = new Font("Segoe UI", 14F);
-            checkBoxCam1ZoomOut.Location = new Point(6, 56);
-            checkBoxCam1ZoomOut.Name = "checkBoxCam1ZoomOut";
-            checkBoxCam1ZoomOut.Size = new Size(174, 29);
-            checkBoxCam1ZoomOut.TabIndex = 2;
-            checkBoxCam1ZoomOut.Text = "Cam 1 Zoom Out";
-            checkBoxCam1ZoomOut.UseVisualStyleBackColor = true;
-            checkBoxCam1ZoomOut.CheckedChanged += checkBoxCam1ZoomOut_CheckedChanged;
             // 
             // textBoxResponseString
             // 
@@ -136,8 +110,6 @@ namespace CamCtlTestApp
             // 
             groupBoxFunctions.Controls.Add(buttonCam1ZoomOut);
             groupBoxFunctions.Controls.Add(buttonCam1ZoomIn);
-            groupBoxFunctions.Controls.Add(checkBoxCam1ZoomIn);
-            groupBoxFunctions.Controls.Add(checkBoxCam1ZoomOut);
             groupBoxFunctions.Controls.Add(labelCommandString);
             groupBoxFunctions.Controls.Add(textBoxResponseString);
             groupBoxFunctions.Controls.Add(textBoxCmdString);
@@ -224,8 +196,6 @@ namespace CamCtlTestApp
         #endregion
 
         private Label label1;
-        private CheckBox checkBoxCam1ZoomIn;
-        private CheckBox checkBoxCam1ZoomOut;
         private TextBox textBoxResponseString;
         private TextBox textBoxCmdString;
         private Label labelResponseString;

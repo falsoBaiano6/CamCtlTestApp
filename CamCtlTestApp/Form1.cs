@@ -18,23 +18,26 @@ namespace CamCtlTestApp
         public static string CAM1_STR = "CAM1";
         public static string CAM2_STR = "CAM2";
         public static string CAM3_STR = "CAM3";
-        public static string ZOOM_IN_STR = "<2800>";
-        public static string ZOOM_OUT_STR = "<2810>";
+        public static string ZOOM_IN_STR = "<12800>";
+        public static string ZOOM_OUT_STR = "<12810>";
         public static string START_MARKER_RCVD_CODE = "FE";
+        public static string CAM_ID_RCVD_CODE = "@";
         public static string DATA_CHAR_RCVD_CODE = "AA";
         public static string END_MARKER_RCVD_CODE = "EF";
         public static string HOST_LISTENING_CODE = "!";
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
+        public static int CAM_ID_IDX = 1;
         public static int RSP_START_MARKER_RCVD_CODE_IDX = 0;
-        public static int RSP_DATA_RCVD_CODE_IDX = 2;
-        public static int CMD_DATA_IDX = 1;
-        public static int RSP_END_MARKER_RCVD_CODE_IDX = 10;
-        public static int CMD_END_MARKER_IDX = 5;
+        public static int RSP_CAM_ID_RCVD_CODE_IDX = 2;
+        public static int RSP_DATA_RCVD_CODE_IDX = 3;
+        public static int CMD_DATA_IDX = 2;
+        public static int RSP_END_MARKER_RCVD_CODE_IDX = 11;
+        public static int CMD_END_MARKER_IDX = 6;
         // Sizes
         public static int MAX_CHAR_BUF_SIZE = 16;
-        public static int NUM_CMD_CHARS = 6;
-        public static int NUM_RSP_CHARS = 12;
+        public static int NUM_CMD_CHARS = 7;
+        public static int NUM_RSP_CHARS = 13;
         public static int NUM_CODE_CHARS = 2;
         // Expected return string: FEAAAAAAAAEF
 
@@ -158,8 +161,10 @@ namespace CamCtlTestApp
             bool success = false;
             char cmdChar;
             char rspChar;
+            string rspStr = "";
             char[] currRspCode = new char[NUM_CODE_CHARS];
             char[] STXCode = new char[NUM_CODE_CHARS];
+            char[] camIdCode = new char[1];
             char[] DataCode = new char[NUM_CODE_CHARS];
             char[] ETXCode = new char[NUM_CODE_CHARS];
 
@@ -180,37 +185,46 @@ namespace CamCtlTestApp
 
                 textBoxCmdStringText += cmdChar;
 
-                // wait for response char
-                for (int j = 0; j < NUM_CODE_CHARS; j++)
+                while (camPort.BytesToRead == 0) { } ;
+                rspStr =camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+
+
+                // start marker
+                if (i == CMD_START_MARKER_IDX)
                 {
-                    while (camPort.BytesToRead == 0) { }
-                    ;
-                    rspChar = (char)camPort.ReadChar();
-                    currRspCode[j] = rspChar;
-
-
-                    // start marker
-                    if ((i == CMD_START_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
+                    Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_START_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
+                    STXCode = START_MARKER_RCVD_CODE.ToCharArray();
+                    textBoxResponseStringText += new string(rspStr);
+                    success = (charArraysAreEqual(rspStr.ToCharArray(), STXCode)) ? true : false;
+                    if (!success)
                     {
-                        Array.Copy(currRspCode, 0, rspArray, RSP_START_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
-                        STXCode = START_MARKER_RCVD_CODE.ToCharArray();
-                        textBoxResponseStringText += new string(currRspCode);
-                        success = (charArraysAreEqual(currRspCode, STXCode)) ? true : false;
+                        return false;                                                                                                                                                                     return false;
+                    }
+                }
+                // Indices                                                 
+                else
+                {
+                    // camera ID character
+                    if (i == CAM_ID_IDX)
+                    {
+                        Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_CAM_ID_RCVD_CODE_IDX, 1);
+                        camIdCode = CAM_ID_RCVD_CODE.ToCharArray();
+                        textBoxResponseStringText += new string(rspStr);
+                        success = (charArraysAreEqual(rspStr.ToCharArray(), camIdCode)) ? true : false;
                         if (!success)
                         {
                             return false;
                         }
                     }
-                    // Indices
                     else
                     {
                         // data characters
-                        if ((i > CMD_START_MARKER_IDX) && (i < CMD_END_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
+                        if ((i > CAM_ID_IDX) && (i < CMD_END_MARKER_IDX))
                         {
-                            Array.Copy(currRspCode, 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
+                            Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
                             DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
-                            textBoxResponseStringText += new string(currRspCode);
-                            success = (charArraysAreEqual(currRspCode, DataCode)) ? true : false;
+                            textBoxResponseStringText += new string(rspStr);
+                            success = (charArraysAreEqual(rspStr.ToCharArray(), DataCode)) ? true : false;
                             if (!success)
                             {
                                 return false;
@@ -219,13 +233,13 @@ namespace CamCtlTestApp
                         else
                         // end marker
                         {
-                            if ((i == CMD_END_MARKER_IDX) && (j == NUM_CODE_CHARS - 1))
+                            if (i == CMD_END_MARKER_IDX)
                             {
-                                Array.Copy(currRspCode, 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
+                                Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
                                 ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
-                                textBoxResponseStringText += new string(currRspCode);
+                                textBoxResponseStringText += new string(rspStr);
                                 textBoxCmdStringCompleteText = textBoxCmdStringText;
-                                success = (charArraysAreEqual(currRspCode, ETXCode)) ? true : false;
+                                success = (charArraysAreEqual(rspStr.ToCharArray(), ETXCode)) ? true : false;
                                 if (!success)
                                 {
                                     return false;
@@ -238,6 +252,7 @@ namespace CamCtlTestApp
                         }
 
                     }
+
 
                 }
 
@@ -286,82 +301,7 @@ namespace CamCtlTestApp
         }
 
         // UI Event Handlers
-        private void checkBoxCam1ZoomIn_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkBoxCam1ZoomIn.Checked)
-            {
-                if (checkBoxCam1ZoomOut.Checked)
-                {
-                    checkBoxCam1ZoomIn.Checked = false;
-                }
-                else
-                {
-                    checkBoxCam1ZoomIn.Checked = true;
-                    if (!(isUcPowerCycled))
-                    {
-                        MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
-                        checkBoxCam1ZoomIn.Checked = false;
-                        return;
-                    }
-                    if (!(SendZoomCmd("CAM1", ZOOM_IN_STR)))
-                    {
-                        MessageBox.Show("Send Zoom In Command Failed.");
-                        checkBoxCam1ZoomIn.Checked = false;
-                        return;
-
-                    }
-                    else
-                    {
-                        // Command succeeded
-                        checkBoxCam1ZoomIn.Checked = false;
-                        return;
-                    }
-                }
-            }
-            else
-            {
-                // Unchecking the box will not send a command, it simply allows the user to select the function again if desired
-            }
-        }
-
-        private void checkBoxCam1ZoomOut_CheckedChanged(object sender, EventArgs e)
-        {
-            if (checkBoxCam1ZoomOut.Checked)
-            {
-                if (checkBoxCam1ZoomIn.Checked)
-                {
-                    checkBoxCam1ZoomOut.Checked = false;
-                }
-                else
-                {
-                    checkBoxCam1ZoomOut.Checked = true;
-                    if (!(isUcPowerCycled))
-                    {
-                        MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
-                        checkBoxCam1ZoomOut.Checked = false;
-                        return;
-
-                    }
-                    if (!(SendZoomCmd("CAM1", ZOOM_OUT_STR)))
-                    {
-                        MessageBox.Show("Send Zoom Out Command Failed.");
-                        checkBoxCam1ZoomOut.Checked = false;
-                        return;
-                    }
-                    else
-                    {
-                        // Command succeeded
-                        checkBoxCam1ZoomOut.Checked = false;
-                        return;
-
-                    }
-                }
-            }
-            else
-            {
-                // Unchecking the box will not send a command, it simply allows the user to select the function again if desired
-            }
-        }
+       
 
         private void checkBoxInitializeMicro_CheckedChanged(object sender, EventArgs e)
         {
@@ -376,14 +316,15 @@ namespace CamCtlTestApp
             if (checkBoxUcPwrCycleComplete.Checked)
             {
                 isUcPowerCycled = true;
-                if(!InitializeMicroAndComms())
+                if(InitializeMicroAndComms())
                 {
                     textBoxPrereqResponse.Text = "Microcontroller Power Cycle complete... COM Port initialized";
-
-
+                }
+                else
+                {
+                    textBoxPrereqResponse.Text = "Microcontroller communication failed";
                 }
 
-                textBoxPrereqResponse.Text = "Microcontroller communication failed";
                 checkBoxInitializeMicro.Checked = false;
                 checkBoxUcPwrCycleComplete.Checked = false;
             }

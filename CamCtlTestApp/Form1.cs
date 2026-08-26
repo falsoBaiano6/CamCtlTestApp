@@ -18,28 +18,44 @@ namespace CamCtlTestApp
         public static string CAM1_STR = "CAM1";
         public static string CAM2_STR = "CAM2";
         public static string CAM3_STR = "CAM3";
-        public static string ZOOM_IN_STR = "<12800>";
-        public static string ZOOM_OUT_STR = "<12810>";
         public static string START_MARKER_RCVD_CODE = "FE";
         public static string CAM_ID_RCVD_CODE = "@";
+        public static string CMD_RCVD_CODE = "$";
         public static string DATA_CHAR_RCVD_CODE = "AA";
         public static string END_MARKER_RCVD_CODE = "EF";
         public static string HOST_LISTENING_CODE = "!";
+
+        public static string CAM1_ID = "1";
+        public static string CAM2_ID = "2";
+        public static string CAM3_ID = "3";
+
+        // ─── Command codes ─────────────
+        public static string CMD_PAN_LEFT_STR = "L";
+        public static string CMD_PAN_RIGHT_STR = "R";
+        public static string CMD_TILT_UP_STR = "U";
+        public static string CMD_TILT_DOWN_STR = "D";
+        public static string CMD_PAN_STOP_STR = "S";
+        public static string CMD_LANC_STR = "Z";
+        public static string ZOOM_IN_STR = "<1" + CMD_LANC_STR + "2800>";
+        public static string ZOOM_OUT_STR = "<1" + CMD_LANC_STR + "2810>";
+
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
         public static int CAM_ID_IDX = 1;
+        public static int CMD_IDX = 2;
         public static int RSP_START_MARKER_RCVD_CODE_IDX = 0;
         public static int RSP_CAM_ID_RCVD_CODE_IDX = 2;
-        public static int RSP_DATA_RCVD_CODE_IDX = 3;
-        public static int CMD_DATA_IDX = 2;
+        public static int RSP_CMD_RCVD_CODE_IDX = 3;
+        public static int RSP_DATA_RCVD_CODE_IDX = 4;
+        public static int CMD_DATA_IDX = 3;
         public static int RSP_END_MARKER_RCVD_CODE_IDX = 11;
-        public static int CMD_END_MARKER_IDX = 6;
+        public static int CMD_END_MARKER_IDX = 7;
         // Sizes
         public static int MAX_CHAR_BUF_SIZE = 16;
-        public static int NUM_CMD_CHARS = 7;
-        public static int NUM_RSP_CHARS = 13;
+        public static int NUM_CMD_CHARS = 8;
+        public static int NUM_RSP_CHARS = 14;
         public static int NUM_CODE_CHARS = 2;
-        // Expected return string: FEAAAAAAAAEF
+        // Expected return string: FE@$AAAAAAAAEF
 
         // Private members
         public SerialPort camPort;
@@ -165,6 +181,7 @@ namespace CamCtlTestApp
             char[] currRspCode = new char[NUM_CODE_CHARS];
             char[] STXCode = new char[NUM_CODE_CHARS];
             char[] camIdCode = new char[1];
+            char[] cmdCode = new char[1];
             char[] DataCode = new char[NUM_CODE_CHARS];
             char[] ETXCode = new char[NUM_CODE_CHARS];
 
@@ -204,7 +221,7 @@ namespace CamCtlTestApp
                 // Indices                                                 
                 else
                 {
-                    // camera ID character
+                    // camera ID character received ACK
                     if (i == CAM_ID_IDX)
                     {
                         Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_CAM_ID_RCVD_CODE_IDX, 1);
@@ -218,44 +235,55 @@ namespace CamCtlTestApp
                     }
                     else
                     {
-                        // data characters
-                        if ((i > CAM_ID_IDX) && (i < CMD_END_MARKER_IDX))
+                        // Command character received ACK
+                        if (i == CMD_IDX)
                         {
-                            Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
-                            DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
+                            Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_CMD_RCVD_CODE_IDX, 1);
+                            cmdCode = CMD_RCVD_CODE.ToCharArray();
                             textBoxResponseStringText += new string(rspStr);
-                            success = (charArraysAreEqual(rspStr.ToCharArray(), DataCode)) ? true : false;
+                            success = (charArraysAreEqual(rspStr.ToCharArray(), cmdCode)) ? true : false;
                             if (!success)
                             {
                                 return false;
                             }
                         }
                         else
-                        // end marker
                         {
-                            if (i == CMD_END_MARKER_IDX)
+                            // data characters
+                            if ((i > CMD_IDX) && (i < CMD_END_MARKER_IDX))
                             {
-                                Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
-                                ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
+                                Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
+                                DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
                                 textBoxResponseStringText += new string(rspStr);
-                                textBoxCmdStringCompleteText = textBoxCmdStringText;
-                                success = (charArraysAreEqual(rspStr.ToCharArray(), ETXCode)) ? true : false;
+                                success = (charArraysAreEqual(rspStr.ToCharArray(), DataCode)) ? true : false;
                                 if (!success)
                                 {
                                     return false;
                                 }
-                                else
+                            }
+                            else
+                            // end marker
+                            {
+                                if (i == CMD_END_MARKER_IDX)
                                 {
-                                    return true;
+                                    Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
+                                    ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
+                                    textBoxResponseStringText += new string(rspStr);
+                                    textBoxCmdStringCompleteText = textBoxCmdStringText;
+                                    success = (charArraysAreEqual(rspStr.ToCharArray(), ETXCode)) ? true : false;
+                                    if (!success)
+                                    {
+                                        return false;
+                                    }
+                                    else
+                                    {
+                                        return true;
+                                    }
                                 }
                             }
                         }
-
                     }
-
-
                 }
-
             }
 
             // Ensure every path returns a bool
@@ -269,6 +297,8 @@ namespace CamCtlTestApp
             try
             {
                 camPort = new SerialPort("COM3", 115200, Parity.None, 8, StopBits.One);
+                camPort.DtrEnable = true;
+                camPort.RtsEnable = true;
 
                 camPort.Open();
                 // If execution reaches here, the port is open.

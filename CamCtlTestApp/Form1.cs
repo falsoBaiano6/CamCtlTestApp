@@ -1,10 +1,14 @@
 using System;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Diagnostics.Metrics;
 using System.IO.Ports;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.AxHost;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 
@@ -14,7 +18,10 @@ namespace CamCtlTestApp
 
     public partial class MainForm : Form
     {
+        public enum ComState { IDLE, STX, CID, CMD, DATA, ETX };
         // codes
+        public static string START_MARKER_STR = "<";
+        public static string END_MARKER_STR = ">";
         public static string CAM1_STR = "CAM1";
         public static string CAM2_STR = "CAM2";
         public static string CAM3_STR = "CAM3";
@@ -24,6 +31,7 @@ namespace CamCtlTestApp
         public static string DATA_CHAR_RCVD_CODE = "AA";
         public static string END_MARKER_RCVD_CODE = "EF";
         public static string HOST_LISTENING_CODE = "!";
+        public static string COMMAND_COMPLETE_CODE = "OK";
 
         public static string CAM1_ID = "1";
         public static string CAM2_ID = "2";
@@ -38,7 +46,8 @@ namespace CamCtlTestApp
         public static string CMD_LANC_STR = "Z";
         public static string ZOOM_IN_STR = "<1" + CMD_LANC_STR + "2800>";
         public static string ZOOM_OUT_STR = "<1" + CMD_LANC_STR + "2810>";
-
+        public static string ZOOM_DIR_IN_STR = "2800";
+        public static string ZOOM_DIR_OUT_STR = "2801";
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
         public static int CAM_ID_IDX = 1;
@@ -57,29 +66,37 @@ namespace CamCtlTestApp
         public static int NUM_CODE_CHARS = 2;
         // Expected return string: FE@$AAAAAAAAEF
 
+        // Public members
+        public string textBoxResponseStringText;
+        public string textBoxCmdStringText;
+        public string textBoxCmdStringCompleteText;
+
+        public ComState currentComState = ComState.IDLE;
+
+        public int lancDataByteIndex = 0;
+
+
         // Private members
         public SerialPort camPort;
         private bool isUcPowerCycled = false;
         private bool cam1ZoomInButtonPressed = false;
         private bool cam1ZoomOutButtonPressed = false;
-        private BackgroundWorker backgroundWorker1 = new BackgroundWorker();
-        private BackgroundWorker backgroundWorker2 = new BackgroundWorker();
-        string textBoxResponseStringText;
-        string textBoxCmdStringText;
-        string textBoxCmdStringCompleteText;
+        private CancellationTokenSource _cts;
+        private Task _workerTask;
+
 
         public MainForm()
         {
             InitializeComponent();
             textBoxPrereqResponse.Text = "Select 'Initialize Mirocontroller and Communication' before operating functions...";
-            InitializeBackgroundWorkers();
+            //InitializeBackgroundWorkers();
+            StartWorker();
+
         }
 
         ~MainForm()
         {
             // Cleanup code for unmanaged resources
-            backgroundWorker1.CancelAsync();
-            backgroundWorker1.Dispose();
             camPort.Close();
         }
 
@@ -94,202 +111,226 @@ namespace CamCtlTestApp
             return (new string(currRspCode) == new string(referenceCode));
         }
 
-        void InitializeBackgroundWorkers()
+        private void StartWorker()
         {
- 
+            if (_workerTask != null && !_workerTask.IsCompleted) return;
 
-            backgroundWorker1.DoWork += backgroundWorker1_DoWork;
-            backgroundWorker1.RunWorkerCompleted += backgroundWorker1_RunWorkerCompleted;
-            backgroundWorker1.ProgressChanged += new ProgressChangedEventHandler(backgroundWorker1_ProgressChanged);
-            backgroundWorker1.WorkerSupportsCancellation = true;
-            backgroundWorker1.WorkerReportsProgress = true;
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
 
-            if (!backgroundWorker1.IsBusy)
+            // Progress for UI updates; runs on UI thread
+            var rspProgress = new Progress<string>(s =>
             {
-                backgroundWorker1.RunWorkerAsync();
-            }
+                // update the actual TextBox control, not the string field
+                textBoxResponseString.Text = s;
+            });
+            var cmdProgress = new Progress<string>(s =>
+            {
+                // update the actual TextBox control, not the string field
+                textBoxCmdString.Text = s;
+            });
+
+            _workerTask = Task.Run(async () =>
+            {
+                while (!token.IsCancellationRequested)
+                {
+                    if (cam1ZoomInButtonPressed)
+                    {
+                        SendCommand(CAM1_ID, CMD_LANC_STR, ZOOM_DIR_IN_STR);
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    if (cam1ZoomOutButtonPressed)
+                    {
+                        SendCommand(CAM1_ID, CMD_LANC_STR, ZOOM_DIR_OUT_STR);
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    try
+                    {
+                        await Task.Delay(100, token);
+                    }
+                    catch (TaskCanceledException) { break; }
+                }
+            }, token);
         }
 
-        void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
+        // stop the worker (e.g., on form closing)
+        private async Task StopWorkerAsync()
         {
-            // Get the BackgroundWorker that raised this event.
-            BackgroundWorker worker = sender as BackgroundWorker;
-
-            while(true)
-            {
-                if (cam1ZoomInButtonPressed)
-                {
-                    if (!(SendZoomCmd("CAM1", ZOOM_IN_STR)))
-                    {
-                        MessageBox.Show("Send Zoom In Command Failed.");
-                        cam1ZoomInButtonPressed = false;
-                        buttonCam1ZoomIn.BackColor = SystemColors.Control;
-                        return;
-                    }
-                    else
-                    {
-                        // Succeeded -- Update textBoxCmdString in UI
-                        backgroundWorker1.ReportProgress(0, "");
-                        backgroundWorker1.ReportProgress(0, textBoxResponseStringText);
-                    }
-                }
-
-                if (cam1ZoomOutButtonPressed)
-                {
-                    if (!(SendZoomCmd("CAM1", ZOOM_OUT_STR)))
-                    {
-                        MessageBox.Show("Send Zoom Out Command Failed.");
-                        cam1ZoomOutButtonPressed = false;
-                        buttonCam1ZoomOut.BackColor = SystemColors.Control;
-                        return;
-                    }
-                    else
-                    {
-                        // Succeeded -- Update textBoxResponseString in UI
-                        backgroundWorker1.ReportProgress(0, "");
-                        backgroundWorker1.ReportProgress(0, textBoxResponseStringText);
-                    }
-                }
-            }
+            if (_cts == null) return;
+            _cts.Cancel();
+            try { await _workerTask; } catch { }
+            _cts.Dispose();
+            _cts = null;
+            _workerTask = null;
         }
-        void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-            {
-                // First, handle the case where an exception was thrown.
-                if (e.Error != null)
-                {
-                    _ = MessageBox.Show(e.Error.Message);
-                }
-                else if (e.Cancelled)
-                {
-                }
-                else
-                {
-                }
-        }
-        private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            this.textBoxResponseString.Text = (string)e.UserState;
-        } 
 
-        private bool SendZoomCmd(string cameraStr, string zoomDirectionStr)
+        private void UpdateComState(string camID, string commandCode, string data)
         {
-            char[] rspArray = new char[NUM_RSP_CHARS];
-            bool success = false;
-            char cmdChar;
-            char rspChar;
             string rspStr = "";
-            char[] currRspCode = new char[NUM_CODE_CHARS];
-            char[] STXCode = new char[NUM_CODE_CHARS];
-            char[] camIdCode = new char[1];
-            char[] cmdCode = new char[1];
-            char[] DataCode = new char[NUM_CODE_CHARS];
-            char[] ETXCode = new char[NUM_CODE_CHARS];
 
-            textBoxResponseStringText = "";
-            textBoxCmdStringText = "";
-
-            // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
-            FlushRxBuffer();
-
-    
-            for (int i = 0; i < NUM_CMD_CHARS; i++)
+            switch (currentComState)
             {
-                success = false;
-                cmdChar = zoomDirectionStr[i];
-
-                // Send current command char...
-                camPort.Write(cmdChar.ToString());
-
-                textBoxCmdStringText += cmdChar;
-
-                while (camPort.BytesToRead == 0) { } ;
-                rspStr =camPort.ReadLine().Replace("\r", "").Replace("\n", "");
-
-
-                // start marker
-                if (i == CMD_START_MARKER_IDX)
-                {
-                    Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_START_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
-                    STXCode = START_MARKER_RCVD_CODE.ToCharArray();
-                    textBoxResponseStringText += new string(rspStr);
-                    success = (charArraysAreEqual(rspStr.ToCharArray(), STXCode)) ? true : false;
-                    if (!success)
+                case ComState.IDLE:
+                    rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                    textBoxResponseStringText += rspStr;
+                    textBoxResponseStringText = "";
+                    if (camPort.BytesToRead > 0)
                     {
-                        return false;                                                                                                                                                                     return false;
-                    }
-                }
-                // Indices                                                 
-                else
-                {
-                    // camera ID character received ACK
-                    if (i == CAM_ID_IDX)
-                    {
-                        Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_CAM_ID_RCVD_CODE_IDX, 1);
-                        camIdCode = CAM_ID_RCVD_CODE.ToCharArray();
-                        textBoxResponseStringText += new string(rspStr);
-                        success = (charArraysAreEqual(rspStr.ToCharArray(), camIdCode)) ? true : false;
-                        if (!success)
+                        if (rspStr == COMMAND_COMPLETE_CODE)
                         {
-                            return false;
+                            camPort.Write(camID);
+                            textBoxCmdStringText += camID;
+                            currentComState = ComState.CID;
+                        }
+                        else
+                        {
+                            currentComState = ComState.IDLE;
+
+                        }
+
+                    }
+                    textBoxCmdStringText = "";
+                    // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
+                    FlushRxBuffer();
+                    lancDataByteIndex = 0;
+
+                    // Send current command char...
+                    camPort.Write(START_MARKER_STR);
+                    textBoxCmdStringText += START_MARKER_STR;
+                    currentComState = ComState.STX;
+                    break;
+
+                case ComState.STX:
+                    if(camPort.BytesToRead > 0)
+                    {
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+
+                        if (rspStr == START_MARKER_RCVD_CODE)
+                        {
+                            camPort.Write(camID);
+                            textBoxCmdStringText += camID;
+                            currentComState = ComState.CID;
+                        }
+                        else
+                        {
+                            currentComState = ComState.IDLE;
+
                         }
                     }
-                    else
+                    break;
+
+                case ComState.CID:
+                    if (camPort.BytesToRead > 0) 
                     {
-                        // Command character received ACK
-                        if (i == CMD_IDX)
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+                        if (rspStr == CAM_ID_RCVD_CODE)
                         {
-                            Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_CMD_RCVD_CODE_IDX, 1);
-                            cmdCode = CMD_RCVD_CODE.ToCharArray();
-                            textBoxResponseStringText += new string(rspStr);
-                            success = (charArraysAreEqual(rspStr.ToCharArray(), cmdCode)) ? true : false;
-                            if (!success)
+                            // Send current command code...
+                            camPort.Write(commandCode);
+                            textBoxCmdStringText += commandCode; 
+                            currentComState = ComState.CMD;
+                        }
+                        else
+                        {
+                            currentComState = ComState.IDLE;
+                        }
+                    }                  
+                    break;
+
+                case ComState.CMD:
+                    if(camPort.BytesToRead > 0)
+                    {
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+                        if (rspStr == CMD_RCVD_CODE)
+                        {
+                            if (commandCode == CMD_LANC_STR)
                             {
-                                return false;
+
+                                // Send first data character...
+                                string firstDataChar = data.Substring(lancDataByteIndex++, 1);
+                                camPort.Write(firstDataChar);
+                                textBoxCmdStringText += firstDataChar;
+                                currentComState = ComState.DATA;
+                            }
+                            else
+                            {
+                                    // command is Pant/Tilt,  packet is malformed
+                                    // Send end marker...
+                                    camPort.Write(END_MARKER_STR);
+                                    currentComState = ComState.ETX;
                             }
                         }
                         else
                         {
-                            // data characters
-                            if ((i > CMD_IDX) && (i < CMD_END_MARKER_IDX))
-                            {
-                                Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_DATA_RCVD_CODE_IDX + ((i - CMD_DATA_IDX) * NUM_CODE_CHARS), NUM_CODE_CHARS);
-                                DataCode = DATA_CHAR_RCVD_CODE.ToCharArray();
-                                textBoxResponseStringText += new string(rspStr);
-                                success = (charArraysAreEqual(rspStr.ToCharArray(), DataCode)) ? true : false;
-                                if (!success)
-                                {
-                                    return false;
-                                }
-                            }
-                            else
-                            // end marker
-                            {
-                                if (i == CMD_END_MARKER_IDX)
-                                {
-                                    Array.Copy(rspStr.ToCharArray(), 0, rspArray, RSP_END_MARKER_RCVD_CODE_IDX, NUM_CODE_CHARS);
-                                    ETXCode = END_MARKER_RCVD_CODE.ToCharArray();
-                                    textBoxResponseStringText += new string(rspStr);
-                                    textBoxCmdStringCompleteText = textBoxCmdStringText;
-                                    success = (charArraysAreEqual(rspStr.ToCharArray(), ETXCode)) ? true : false;
-                                    if (!success)
-                                    {
-                                        return false;
-                                    }
-                                    else
-                                    {
-                                        return true;
-                                    }
-                                }
-                            }
+                            currentComState = ComState.IDLE;
                         }
                     }
-                }
+                    break;
+
+                case ComState.DATA:
+                    if (camPort.BytesToRead > 0)
+                    {
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+                        if (rspStr == DATA_CHAR_RCVD_CODE)
+                        {
+                            if(lancDataByteIndex < data.Length)
+                            {
+                                string nextDataChar = data.Substring(lancDataByteIndex++, 1);
+                                camPort.Write(nextDataChar);
+                                textBoxCmdStringText += nextDataChar;
+                            }
+                            else
+                            {
+                                // Send end marker...
+                                camPort.Write(END_MARKER_STR);
+                                textBoxCmdStringText += END_MARKER_STR;
+                                currentComState = ComState.ETX;
+                            }
+                        }
+                        else
+                        {
+                            currentComState = ComState.IDLE;
+                        }
+                    }
+                    break;
+
+                case ComState.ETX:
+                    if (camPort.BytesToRead > 0)
+                    {
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+                        if (rspStr == END_MARKER_RCVD_CODE)
+                        {
+                            currentComState = ComState.IDLE;
+                        }
+                        else
+                        {
+                            currentComState = ComState.IDLE;
+                        }
+                    }
+                    break;
+
+
+                default:
+                    
+                    throw new ArgumentOutOfRangeException($"State {currentComState} not implemented.");
+                    break;
             }
 
-            // Ensure every path returns a bool
-            return false;
         }
 
+        private void SendCommand(string cameraID, string commandCode,  string data )
+        {
+            UpdateComState(cameraID, commandCode, data);
+        }
 
         public bool InitializeMicroAndComms()
         {

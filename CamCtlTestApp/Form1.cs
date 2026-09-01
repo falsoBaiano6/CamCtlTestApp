@@ -18,7 +18,7 @@ namespace CamCtlTestApp
 
     public partial class MainForm : Form
     {
-        public enum ComState { IDLE, STX, CID, CMD, DATA, ETX };
+        public enum ComState { IDLE, STX, CID, CMD, DATA, ETX, CC };
         // codes
         public static string START_MARKER_STR = "<";
         public static string END_MARKER_STR = ">";
@@ -175,24 +175,7 @@ namespace CamCtlTestApp
             switch (currentComState)
             {
                 case ComState.IDLE:
-                    rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
-                    textBoxResponseStringText += rspStr;
                     textBoxResponseStringText = "";
-                    if (camPort.BytesToRead > 0)
-                    {
-                        if (rspStr == COMMAND_COMPLETE_CODE)
-                        {
-                            camPort.Write(camID);
-                            textBoxCmdStringText += camID;
-                            currentComState = ComState.CID;
-                        }
-                        else
-                        {
-                            currentComState = ComState.IDLE;
-
-                        }
-
-                    }
                     textBoxCmdStringText = "";
                     // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
                     FlushRxBuffer();
@@ -216,11 +199,11 @@ namespace CamCtlTestApp
                             textBoxCmdStringText += camID;
                             currentComState = ComState.CID;
                         }
-                        else
-                        {
-                            currentComState = ComState.IDLE;
+                        //else
+                        //{
+                        //    currentComState = ComState.IDLE;
 
-                        }
+                        //}
                     }
                     break;
 
@@ -236,10 +219,10 @@ namespace CamCtlTestApp
                             textBoxCmdStringText += commandCode; 
                             currentComState = ComState.CMD;
                         }
-                        else
-                        {
-                            currentComState = ComState.IDLE;
-                        }
+                        //else
+                        //{
+                        //    currentComState = ComState.IDLE;
+                        //}
                     }                  
                     break;
 
@@ -267,10 +250,10 @@ namespace CamCtlTestApp
                                     currentComState = ComState.ETX;
                             }
                         }
-                        else
-                        {
-                            currentComState = ComState.IDLE;
-                        }
+                        //else
+                        //{
+                        //    currentComState = ComState.IDLE;
+                        //}
                     }
                     break;
 
@@ -295,10 +278,10 @@ namespace CamCtlTestApp
                                 currentComState = ComState.ETX;
                             }
                         }
-                        else
-                        {
-                            currentComState = ComState.IDLE;
-                        }
+                        //else
+                        //{
+                        //    currentComState = ComState.IDLE;
+                        //}
                     }
                     break;
 
@@ -309,11 +292,26 @@ namespace CamCtlTestApp
                         textBoxResponseStringText += rspStr;
                         if (rspStr == END_MARKER_RCVD_CODE)
                         {
-                            currentComState = ComState.IDLE;
+                            currentComState = ComState.CC;
                         }
-                        else
+                        //else
+                        //{
+                        //    currentComState = ComState.IDLE;
+                        //}
+                    }
+                    break;
+
+                case ComState.CC: // (Command Completed)
+                    if (camPort.BytesToRead > 0)
+                    {
+                        rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
+                        textBoxResponseStringText += rspStr;
+                        if (camPort.BytesToRead > 0)
                         {
-                            currentComState = ComState.IDLE;
+                            if (rspStr == COMMAND_COMPLETE_CODE)
+                            {
+                                currentComState = ComState.IDLE;
+                            }
                         }
                     }
                     break;

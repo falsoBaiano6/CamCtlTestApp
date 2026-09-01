@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CamCtlTestApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2dd1f72d30eb50af5720ff87eb794d78deea973c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68ad42e5c4ab8a3a3e865237cd5fefb41ed98f8e")]
 [assembly: System.Reflection.AssemblyProductAttribute("CamCtlTestApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CamCtlTestApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -10,6 +10,7 @@ using System.Text;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.AxHost;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ToolBar;
 
 
 namespace CamCtlTestApp
@@ -31,7 +32,7 @@ namespace CamCtlTestApp
         public static string DATA_CHAR_RCVD_CODE = "AA";
         public static string END_MARKER_RCVD_CODE = "EF";
         public static string HOST_LISTENING_CODE = "!";
-        public static string COMMAND_COMPLETE_CODE = "OK";
+        public static string COMMAND_COMPLETE_CODE = "%";
 
         public static string CAM1_ID = "1";
         public static string CAM2_ID = "2";
@@ -44,10 +45,9 @@ namespace CamCtlTestApp
         public static string CMD_TILT_DOWN_STR = "D";
         public static string CMD_PAN_STOP_STR = "S";
         public static string CMD_LANC_STR = "Z";
-        public static string ZOOM_IN_STR = "<1" + CMD_LANC_STR + "2800>";
-        public static string ZOOM_OUT_STR = "<1" + CMD_LANC_STR + "2810>";
+        public static string CMD_LANC_STOP_STR = "Y";
         public static string ZOOM_DIR_IN_STR = "2800";
-        public static string ZOOM_DIR_OUT_STR = "2801";
+        public static string ZOOM_DIR_OUT_STR = "2810";
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
         public static int CAM_ID_IDX = 1;
@@ -80,7 +80,9 @@ namespace CamCtlTestApp
         public SerialPort camPort;
         private bool isUcPowerCycled = false;
         private bool cam1ZoomInButtonPressed = false;
+        private bool cam1ZoomInButtonReleased = false;
         private bool cam1ZoomOutButtonPressed = false;
+        private bool cam1ZoomOutButtonReleased = false;
         private CancellationTokenSource _cts;
         private Task _workerTask;
 
@@ -141,9 +143,25 @@ namespace CamCtlTestApp
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
+                    if (cam1ZoomInButtonReleased)
+                    {
+                        SendCommand(CAM1_ID, CMD_LANC_STOP_STR, "");
+                        cam1ZoomInButtonReleased = false;
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
                     if (cam1ZoomOutButtonPressed)
                     {
                         SendCommand(CAM1_ID, CMD_LANC_STR, ZOOM_DIR_OUT_STR);
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    if (cam1ZoomOutButtonReleased)
+                    {
+                        SendCommand(CAM1_ID, CMD_LANC_STOP_STR, "");
+                        cam1ZoomOutButtonReleased = false;
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
@@ -188,7 +206,7 @@ namespace CamCtlTestApp
                     break;
 
                 case ComState.STX:
-                    if(camPort.BytesToRead > 0)
+                    if (camPort.BytesToRead > 0)
                     {
                         rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
                         textBoxResponseStringText += rspStr;
@@ -208,7 +226,7 @@ namespace CamCtlTestApp
                     break;
 
                 case ComState.CID:
-                    if (camPort.BytesToRead > 0) 
+                    if (camPort.BytesToRead > 0)
                     {
                         rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
                         textBoxResponseStringText += rspStr;
@@ -216,18 +234,18 @@ namespace CamCtlTestApp
                         {
                             // Send current command code...
                             camPort.Write(commandCode);
-                            textBoxCmdStringText += commandCode; 
+                            textBoxCmdStringText += commandCode;
                             currentComState = ComState.CMD;
                         }
                         //else
                         //{
                         //    currentComState = ComState.IDLE;
                         //}
-                    }                  
+                    }
                     break;
 
                 case ComState.CMD:
-                    if(camPort.BytesToRead > 0)
+                    if (camPort.BytesToRead > 0)
                     {
                         rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
                         textBoxResponseStringText += rspStr;
@@ -244,10 +262,10 @@ namespace CamCtlTestApp
                             }
                             else
                             {
-                                    // command is Pant/Tilt,  packet is malformed
-                                    // Send end marker...
-                                    camPort.Write(END_MARKER_STR);
-                                    currentComState = ComState.ETX;
+                                // command is Pant/Tilt,  packet is malformed
+                                // Send end marker...
+                                camPort.Write(END_MARKER_STR);
+                                currentComState = ComState.ETX;
                             }
                         }
                         //else
@@ -264,7 +282,7 @@ namespace CamCtlTestApp
                         textBoxResponseStringText += rspStr;
                         if (rspStr == DATA_CHAR_RCVD_CODE)
                         {
-                            if(lancDataByteIndex < data.Length)
+                            if (lancDataByteIndex < data.Length)
                             {
                                 string nextDataChar = data.Substring(lancDataByteIndex++, 1);
                                 camPort.Write(nextDataChar);
@@ -306,26 +324,23 @@ namespace CamCtlTestApp
                     {
                         rspStr = camPort.ReadLine().Replace("\r", "").Replace("\n", "");
                         textBoxResponseStringText += rspStr;
-                        if (camPort.BytesToRead > 0)
+                        if (rspStr == COMMAND_COMPLETE_CODE)
                         {
-                            if (rspStr == COMMAND_COMPLETE_CODE)
-                            {
-                                currentComState = ComState.IDLE;
-                            }
+                            currentComState = ComState.IDLE;
                         }
                     }
                     break;
 
 
                 default:
-                    
+
                     throw new ArgumentOutOfRangeException($"State {currentComState} not implemented.");
                     break;
             }
 
         }
 
-        private void SendCommand(string cameraID, string commandCode,  string data )
+        private void SendCommand(string cameraID, string commandCode, string data)
         {
             UpdateComState(cameraID, commandCode, data);
         }
@@ -352,14 +367,15 @@ namespace CamCtlTestApp
             camPort.Write(HOST_LISTENING_CODE);
             // wait for initialization string from Arduino
             Thread.Sleep(500);
-            if(camPort.BytesToRead == 0)
+            if (camPort.BytesToRead == 0)
             {
                 MessageBox.Show("No response from microcontroller. Please check connection and ensure microcontroller is properly initialized.");
                 //Console.WriteLine("Error communicating with micro: ");
 
                 return false;
             }
-            while (camPort.BytesToRead == 0) { };
+            while (camPort.BytesToRead == 0) { }
+            ;
             textBoxResponseString.Text = camPort.ReadLine().ToString();
             if (textBoxResponseString.Text.Length == 0)
             {
@@ -370,7 +386,7 @@ namespace CamCtlTestApp
         }
 
         // UI Event Handlers
-       
+
 
         private void checkBoxInitializeMicro_CheckedChanged(object sender, EventArgs e)
         {
@@ -385,7 +401,7 @@ namespace CamCtlTestApp
             if (checkBoxUcPwrCycleComplete.Checked)
             {
                 isUcPowerCycled = true;
-                if(InitializeMicroAndComms())
+                if (InitializeMicroAndComms())
                 {
                     textBoxPrereqResponse.Text = "Microcontroller Power Cycle complete... COM Port initialized";
                 }
@@ -415,6 +431,10 @@ namespace CamCtlTestApp
             }
             else
             {
+                if (cam1ZoomInButtonReleased == false)
+                {
+                    cam1ZoomInButtonReleased = true;
+                }
                 cam1ZoomInButtonPressed = false;
                 buttonCam1ZoomIn.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
@@ -437,8 +457,12 @@ namespace CamCtlTestApp
             }
             else
             {
-                cam1ZoomOutButtonPressed = false;
-                buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                if (cam1ZoomOutButtonReleased == false)
+                {
+                    cam1ZoomOutButtonReleased = true;
+                }
+                cam1ZoomInButtonPressed = false;
+                buttonCam1ZoomIn.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }
 

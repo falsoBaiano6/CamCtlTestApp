@@ -19,7 +19,10 @@ namespace CamCtlTestApp
 
     public partial class MainForm : Form
     {
-        public enum ComState { IDLE, STX, CID, CMD, DATA, ETX, CC };
+        public enum ComState { COM_IDLE, STX, CID, CMD, DATA, ETX, CC };
+
+        public enum ZoomState { ZOOM_IDLE, ZOOM_IN, ZOOM_OUT };
+
         // codes
         public static string START_MARKER_STR = "<";
         public static string END_MARKER_STR = ">";
@@ -71,9 +74,13 @@ namespace CamCtlTestApp
         public string textBoxCmdStringText;
         public string textBoxCmdStringCompleteText;
 
-        public ComState currentComState = ComState.IDLE;
+        public ComState currentComState = ComState.COM_IDLE;
+        public ZoomState currentZoomState = ZoomState.ZOOM_IDLE;
 
         public int lancDataByteIndex = 0;
+        public string camIdStr = "";
+        public string cmdCodeStr = "";
+        public string dataStr = "";
 
 
         // Private members
@@ -85,6 +92,7 @@ namespace CamCtlTestApp
         private bool cam1ZoomOutButtonReleased = false;
         private CancellationTokenSource _cts;
         private Task _workerTask;
+        private bool isComInitialized = false;
 
 
         public MainForm()
@@ -138,35 +146,76 @@ namespace CamCtlTestApp
                 {
                     if (cam1ZoomInButtonPressed)
                     {
-                        SendCommand(CAM1_ID, CMD_LANC_STR, ZOOM_DIR_IN_STR);
+                        if(currentComState == ComState.COM_IDLE)
+                        {
+                            currentZoomState = ZoomState.ZOOM_IN;
+                            camIdStr = CAM1_ID;
+                            cmdCodeStr = CMD_LANC_STR;
+                            dataStr = ZOOM_DIR_IN_STR;
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+
                     }
 
                     if (cam1ZoomInButtonReleased)
                     {
-                        SendCommand(CAM1_ID, CMD_LANC_STOP_STR, "");
-                        cam1ZoomInButtonReleased = false;
+                        if(currentComState == ComState.COM_IDLE)  
+                        {
+                            // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
+                            currentZoomState = ZoomState.ZOOM_IDLE;
+                            cam1ZoomInButtonReleased = false;
+                            camIdStr = CAM1_ID;
+                            cmdCodeStr = CMD_LANC_STOP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
                     if (cam1ZoomOutButtonPressed)
                     {
-                        SendCommand(CAM1_ID, CMD_LANC_STR, ZOOM_DIR_OUT_STR);
+                        if (currentComState == ComState.COM_IDLE)
+                        {
+                            currentZoomState = ZoomState.ZOOM_OUT;
+                            camIdStr = CAM1_ID;
+                            cmdCodeStr = CMD_LANC_STR;
+                            dataStr = ZOOM_DIR_OUT_STR;
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
                     if (cam1ZoomOutButtonReleased)
                     {
-                        SendCommand(CAM1_ID, CMD_LANC_STOP_STR, "");
-                        cam1ZoomOutButtonReleased = false;
+                        if (currentComState == ComState.COM_IDLE)
+                        {
+                            // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
+                            currentZoomState = ZoomState.ZOOM_IDLE;
+                            cam1ZoomOutButtonReleased = false;
+                            camIdStr = CAM1_ID;
+                            cmdCodeStr = CMD_LANC_STOP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
-                    try
+                    if (currentComState != ComState.COM_IDLE)
+                    {
+                        // If communication is underway, finish processing it.
+                        UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                        try
                     {
                         await Task.Delay(100, token);
                     }
@@ -192,7 +241,7 @@ namespace CamCtlTestApp
 
             switch (currentComState)
             {
-                case ComState.IDLE:
+                case ComState.COM_IDLE:
                     textBoxResponseStringText = "";
                     textBoxCmdStringText = "";
                     // Flush Rx Buffer before sending command to ensure only response chars from current command are processed
@@ -262,7 +311,7 @@ namespace CamCtlTestApp
                             }
                             else
                             {
-                                // command is Pant/Tilt,  packet is malformed
+                                // command is Pan/Tilt,  command is ZOOM_STOP, or packet is malformed
                                 // Send end marker...
                                 camPort.Write(END_MARKER_STR);
                                 currentComState = ComState.ETX;
@@ -326,7 +375,7 @@ namespace CamCtlTestApp
                         textBoxResponseStringText += rspStr;
                         if (rspStr == COMMAND_COMPLETE_CODE)
                         {
-                            currentComState = ComState.IDLE;
+                            currentComState = ComState.COM_IDLE;
                         }
                     }
                     break;
@@ -338,11 +387,6 @@ namespace CamCtlTestApp
                     break;
             }
 
-        }
-
-        private void SendCommand(string cameraID, string commandCode, string data)
-        {
-            UpdateComState(cameraID, commandCode, data);
         }
 
         public bool InitializeMicroAndComms()
@@ -379,9 +423,9 @@ namespace CamCtlTestApp
             textBoxResponseString.Text = camPort.ReadLine().ToString();
             if (textBoxResponseString.Text.Length == 0)
             {
-
                 return false;
             }
+            isComInitialized = true;
             return true;
         }
 
@@ -431,7 +475,7 @@ namespace CamCtlTestApp
             }
             else
             {
-                if (cam1ZoomInButtonReleased == false)
+                if (cam1ZoomInButtonReleased == false && currentComState == ComState.COM_IDLE)
                 {
                     cam1ZoomInButtonReleased = true;
                 }

@@ -314,6 +314,7 @@ namespace CamCtlTestApp
                                 // command is Pan/Tilt,  command is ZOOM_STOP, or packet is malformed
                                 // Send end marker...
                                 camPort.Write(END_MARKER_STR);
+                                textBoxCmdStringText += END_MARKER_STR;
                                 currentComState = ComState.ETX;
                             }
                         }
@@ -475,7 +476,7 @@ namespace CamCtlTestApp
             }
             else
             {
-                if (cam1ZoomInButtonReleased == false && currentComState == ComState.COM_IDLE)
+                if (cam1ZoomInButtonReleased == false)
                 {
                     cam1ZoomInButtonReleased = true;
                 }
@@ -505,7 +506,7 @@ namespace CamCtlTestApp
                 {
                     cam1ZoomOutButtonReleased = true;
                 }
-                cam1ZoomInButtonPressed = false;
+                cam1ZoomOutButtonPressed = false;
                 buttonCam1ZoomIn.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }

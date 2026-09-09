@@ -51,7 +51,7 @@ namespace CamCtlTestApp
         public static string CMD_LANC_STOP_STR = "Y";
         public static string ZOOM_DIR_IN_STR = "2800";
         public static string ZOOM_DIR_OUT_STR = "2810";
-       public static string ZOOM_STOP_STR = "0000";
+        public static string ZOOM_STOP_STR = "0000";
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
         public static int CAM_ID_IDX = 1;
@@ -82,6 +82,8 @@ namespace CamCtlTestApp
         public string camIdStr = "";
         public string cmdCodeStr = "";
         public string dataStr = "";
+
+        public string activeCamId = CAM1_ID; // Default to CAM1
 
 
         // Private members
@@ -147,10 +149,10 @@ namespace CamCtlTestApp
                 {
                     if (cam1ZoomInButtonPressed)
                     {
-                        if(currentComState == ComState.COM_IDLE)
+                        if (currentComState == ComState.COM_IDLE)
                         {
                             currentZoomState = ZoomState.ZOOM_IN;
-                            camIdStr = CAM1_ID;
+                            camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STR;
                             dataStr = ZOOM_DIR_IN_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
@@ -163,12 +165,12 @@ namespace CamCtlTestApp
 
                     if (cam1ZoomInButtonReleased)
                     {
-                        if(currentComState == ComState.COM_IDLE)  
+                        if (currentComState == ComState.COM_IDLE)
                         {
                             // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
                             currentZoomState = ZoomState.ZOOM_IDLE;
                             cam1ZoomInButtonReleased = false;
-                            camIdStr = CAM1_ID;
+                            camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STOP_STR;
                             dataStr = ZOOM_STOP_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
@@ -182,7 +184,7 @@ namespace CamCtlTestApp
                         if (currentComState == ComState.COM_IDLE)
                         {
                             currentZoomState = ZoomState.ZOOM_OUT;
-                            camIdStr = CAM1_ID;
+                            camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STR;
                             dataStr = ZOOM_DIR_OUT_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
@@ -199,7 +201,7 @@ namespace CamCtlTestApp
                             // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
                             currentZoomState = ZoomState.ZOOM_IDLE;
                             cam1ZoomOutButtonReleased = false;
-                            camIdStr = CAM1_ID;
+                            camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STOP_STR;
                             dataStr = ZOOM_STOP_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
@@ -216,7 +218,7 @@ namespace CamCtlTestApp
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
-                        try
+                    try
                     {
                         await Task.Delay(100, token);
                     }
@@ -463,15 +465,15 @@ namespace CamCtlTestApp
 
         private void buttonCam1ZoomIn_Click(object sender, EventArgs e)
         {
-            if ((cam1ZoomInButtonPressed == false) && (cam1ZoomOutButtonPressed == false))
+            if ((cam1ZoomInButtonPressed == false) && (cam1ZoomOutButtonPressed == false) && camPort != null)
             {
                 cam1ZoomInButtonPressed = true;
-                buttonCam1ZoomIn.BackColor = Color.LightGreen;
+                buttonCamZoomIn.BackColor = Color.LightGreen;
                 if (!(isUcPowerCycled))
                 {
                     MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
                     cam1ZoomInButtonPressed = false;
-                    buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                    buttonCamZoomIn.BackColor = SystemColors.Control;
                     return;
                 }
             }
@@ -482,22 +484,22 @@ namespace CamCtlTestApp
                     cam1ZoomInButtonReleased = true;
                 }
                 cam1ZoomInButtonPressed = false;
-                buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                buttonCamZoomIn.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }
         }
 
         private void buttonCam1ZoomOut_Click(object sender, EventArgs e)
         {
-            if ((cam1ZoomOutButtonPressed == false) && (cam1ZoomInButtonPressed == false))
+            if ((cam1ZoomOutButtonPressed == false) && (cam1ZoomInButtonPressed == false) && camPort != null)
             {
                 cam1ZoomOutButtonPressed = true;
-                buttonCam1ZoomOut.BackColor = Color.LightGreen;
+                buttonZoomOut.BackColor = Color.LightGreen;
                 if (!(isUcPowerCycled))
                 {
                     MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
                     cam1ZoomOutButtonPressed = false;
-                    buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                    buttonZoomOut.BackColor = SystemColors.Control;
                     return;
                 }
             }
@@ -508,10 +510,35 @@ namespace CamCtlTestApp
                     cam1ZoomOutButtonReleased = true;
                 }
                 cam1ZoomOutButtonPressed = false;
-                buttonCam1ZoomOut.BackColor = SystemColors.Control;
+                buttonZoomOut.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }
 
+        }
+
+        private void radioButtonActiveCamera_CheckedChanged(object sender, EventArgs e)
+        {
+            if (sender is RadioButton radioButton)
+            {
+                if (radioButton.Checked)
+                {
+                    if (currentComState == ComState.COM_IDLE && currentZoomState == ZoomState.ZOOM_IDLE)
+                    {
+                        switch (radioButton.Name)
+                        {
+                            case "radioButtonCam1":
+                                activeCamId = CAM1_ID;
+                                break;
+                            case "radioButtonCam2":
+                                activeCamId = CAM2_ID;
+                                break;
+                            case "radioButtonCam3":
+                                activeCamId = CAM3_ID;
+                                break;
+                        }
+                    }
+                }
+            }
         }
     }
 }

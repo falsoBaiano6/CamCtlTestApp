@@ -51,6 +51,7 @@ namespace CamCtlTestApp
         public static string CMD_LANC_STOP_STR = "Y";
         public static string ZOOM_DIR_IN_STR = "2800";
         public static string ZOOM_DIR_OUT_STR = "2810";
+       public static string ZOOM_STOP_STR = "0000";
         // Indices
         public static int CMD_START_MARKER_IDX = 0;
         public static int CAM_ID_IDX = 1;
@@ -169,7 +170,7 @@ namespace CamCtlTestApp
                             cam1ZoomInButtonReleased = false;
                             camIdStr = CAM1_ID;
                             cmdCodeStr = CMD_LANC_STOP_STR;
-                            dataStr = "";
+                            dataStr = ZOOM_STOP_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
                         }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
@@ -200,7 +201,7 @@ namespace CamCtlTestApp
                             cam1ZoomOutButtonReleased = false;
                             camIdStr = CAM1_ID;
                             cmdCodeStr = CMD_LANC_STOP_STR;
-                            dataStr = "";
+                            dataStr = ZOOM_STOP_STR;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
                         }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
@@ -300,7 +301,7 @@ namespace CamCtlTestApp
                         textBoxResponseStringText += rspStr;
                         if (rspStr == CMD_RCVD_CODE)
                         {
-                            if (commandCode == CMD_LANC_STR)
+                            if (commandCode == CMD_LANC_STR || commandCode == CMD_LANC_STOP_STR)
                             {
 
                                 // Send first data character...
@@ -507,7 +508,7 @@ namespace CamCtlTestApp
                     cam1ZoomOutButtonReleased = true;
                 }
                 cam1ZoomOutButtonPressed = false;
-                buttonCam1ZoomIn.BackColor = SystemColors.Control;
+                buttonCam1ZoomOut.BackColor = SystemColors.Control;
                 textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }
 

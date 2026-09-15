@@ -89,10 +89,18 @@ namespace CamCtlTestApp
         // Private members
         public SerialPort camPort;
         private bool isUcPowerCycled = false;
-        private bool cam1ZoomInButtonPressed = false;
-        private bool cam1ZoomInButtonReleased = false;
-        private bool cam1ZoomOutButtonPressed = false;
-        private bool cam1ZoomOutButtonReleased = false;
+        private bool zoomInButtonPressed = false;
+        private bool zoomInButtonReleased = false;
+        private bool zoomOutButtonPressed = false;
+        private bool zoomOutButtonReleased = false;
+        private bool tiltUpButtonPressed = false;
+        private bool tiltUpButtonReleased = false;
+        private bool tiltDownButtonPressed = false;
+        private bool tiltDownButtonReleased = false;
+        private bool panRightButtonPressed = false;
+        private bool panRightButtonReleased = false;
+        private bool panLeftButtonPressed = false;
+        private bool panLeftButtonReleased = false;
         private CancellationTokenSource _cts;
         private Task _workerTask;
         private bool isComInitialized = false;
@@ -147,7 +155,8 @@ namespace CamCtlTestApp
             {
                 while (!token.IsCancellationRequested)
                 {
-                    if (cam1ZoomInButtonPressed)
+                    //Zoom In
+                    if (zoomInButtonPressed)
                     {
                         if (currentComState == ComState.COM_IDLE)
                         {
@@ -163,13 +172,13 @@ namespace CamCtlTestApp
 
                     }
 
-                    if (cam1ZoomInButtonReleased)
+                    if (zoomInButtonReleased)
                     {
                         if (currentComState == ComState.COM_IDLE)
                         {
                             // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
                             currentZoomState = ZoomState.ZOOM_IDLE;
-                            cam1ZoomInButtonReleased = false;
+                            zoomInButtonReleased = false;
                             camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STOP_STR;
                             dataStr = ZOOM_STOP_STR;
@@ -179,7 +188,8 @@ namespace CamCtlTestApp
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
-                    if (cam1ZoomOutButtonPressed)
+                    //Zoom Out
+                    if (zoomOutButtonPressed)
                     {
                         if (currentComState == ComState.COM_IDLE)
                         {
@@ -194,16 +204,151 @@ namespace CamCtlTestApp
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
                     }
 
-                    if (cam1ZoomOutButtonReleased)
+                    if (zoomOutButtonReleased)
                     {
                         if (currentComState == ComState.COM_IDLE)
                         {
                             // Wait until the currentComState is IDLE before resetting the zoom state to ZOOM_IDLE
                             currentZoomState = ZoomState.ZOOM_IDLE;
-                            cam1ZoomOutButtonReleased = false;
+                            zoomOutButtonReleased = false;
                             camIdStr = activeCamId;
                             cmdCodeStr = CMD_LANC_STOP_STR;
                             dataStr = ZOOM_STOP_STR;
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    // Tilt Up
+                    if (tiltUpButtonPressed)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            tiltUpButtonPressed = false; // send the command only once per button press
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_TILT_UP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+
+                    }
+
+                    if (tiltUpButtonReleased)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
+                            tiltUpButtonReleased = false;
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_STOP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    // Tilt Down
+                    if (tiltDownButtonPressed)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            tiltDownButtonPressed = false; // send the command only once per button press
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_TILT_DOWN_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+
+                    }
+
+                    if (tiltDownButtonReleased)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
+                            tiltDownButtonReleased = false;
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_STOP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+                    if (currentComState != ComState.COM_IDLE)
+                    {
+                        // If communication is underway, finish processing it.
+                        UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    // Pan Right
+                    if (panRightButtonPressed)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            panRightButtonPressed = false; // send the command only once per button press
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_RIGHT_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+
+                    }
+
+                    if (panRightButtonReleased)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
+                            panRightButtonReleased = false;
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_STOP_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    // Pan Left
+                    if (panLeftButtonPressed)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            panLeftButtonPressed = false; // send the command only once per button press
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_LEFT_STR;
+                            dataStr = "";
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                        }
+
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+
+                    }
+
+                    if (panLeftButtonReleased)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
+                            panLeftButtonReleased = false;
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_PAN_STOP_STR;
+                            dataStr = "";
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
                         }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
@@ -462,60 +607,6 @@ namespace CamCtlTestApp
                 checkBoxUcPwrCycleComplete.Checked = false;
             }
         }
-
-        private void buttonCam1ZoomIn_Click(object sender, EventArgs e)
-        {
-            if ((cam1ZoomInButtonPressed == false) && (cam1ZoomOutButtonPressed == false) && camPort != null)
-            {
-                cam1ZoomInButtonPressed = true;
-                buttonCamZoomIn.BackColor = Color.LightGreen;
-                if (!(isUcPowerCycled))
-                {
-                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
-                    cam1ZoomInButtonPressed = false;
-                    buttonCamZoomIn.BackColor = SystemColors.Control;
-                    return;
-                }
-            }
-            else
-            {
-                if (cam1ZoomInButtonReleased == false)
-                {
-                    cam1ZoomInButtonReleased = true;
-                }
-                cam1ZoomInButtonPressed = false;
-                buttonCamZoomIn.BackColor = SystemColors.Control;
-                textBoxCmdString.Text = textBoxCmdStringCompleteText;
-            }
-        }
-
-        private void buttonCam1ZoomOut_Click(object sender, EventArgs e)
-        {
-            if ((cam1ZoomOutButtonPressed == false) && (cam1ZoomInButtonPressed == false) && camPort != null)
-            {
-                cam1ZoomOutButtonPressed = true;
-                buttonZoomOut.BackColor = Color.LightGreen;
-                if (!(isUcPowerCycled))
-                {
-                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
-                    cam1ZoomOutButtonPressed = false;
-                    buttonZoomOut.BackColor = SystemColors.Control;
-                    return;
-                }
-            }
-            else
-            {
-                if (cam1ZoomOutButtonReleased == false)
-                {
-                    cam1ZoomOutButtonReleased = true;
-                }
-                cam1ZoomOutButtonPressed = false;
-                buttonZoomOut.BackColor = SystemColors.Control;
-                textBoxCmdString.Text = textBoxCmdStringCompleteText;
-            }
-
-        }
-
         private void radioButtonActiveCamera_CheckedChanged(object sender, EventArgs e)
         {
             if (sender is RadioButton radioButton)
@@ -538,6 +629,202 @@ namespace CamCtlTestApp
                         }
                     }
                 }
+            }
+        }
+        private void buttonCam1ZoomIn_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the zoom in button as pressed and change its color to light green
+            if ((zoomInButtonPressed == false)
+                && (zoomOutButtonPressed == false)
+                && (tiltUpButtonPressed == false)
+                && (tiltDownButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (camPort != null))
+            {
+                zoomInButtonPressed = true;
+                buttonCamZoomIn.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    zoomInButtonPressed = false;
+                    buttonCamZoomIn.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (zoomInButtonReleased == false)
+                {
+                    zoomInButtonReleased = true;
+                }
+                zoomInButtonPressed = false;
+                buttonCamZoomIn.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+        private void buttonCam1ZoomOut_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the zoom out button as pressed and change its color to light green
+            if ((zoomOutButtonPressed == false)
+                && (zoomInButtonPressed == false)
+                && (tiltUpButtonPressed == false)
+                && (tiltDownButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (camPort != null))
+            {
+                zoomOutButtonPressed = true;
+                buttonZoomOut.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    zoomOutButtonPressed = false;
+                    buttonZoomOut.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (zoomOutButtonReleased == false)
+                {
+                    zoomOutButtonReleased = true;
+                }
+                zoomOutButtonPressed = false;
+                buttonZoomOut.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+
+        private void buttonTiltUp_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the tilt up button as pressed and change its color to light green
+            if ((tiltUpButtonPressed == false) 
+                && (zoomInButtonPressed == false)
+                && (zoomOutButtonPressed == false)
+                && (tiltDownButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (camPort != null))
+            {
+                tiltUpButtonPressed = true;
+                buttonTiltUp.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    tiltUpButtonPressed = false;
+                    buttonTiltUp.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (tiltUpButtonReleased == false)
+                {
+                    tiltUpButtonReleased = true;
+                }
+                tiltUpButtonPressed = false;
+                buttonTiltUp.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+
+        private void buttonTiltDown_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the tilt down button as pressed and change its color to light green
+            if ((tiltDownButtonPressed == false)
+                && (zoomInButtonPressed == false)
+                && (zoomOutButtonPressed == false)
+                && (tiltUpButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (camPort != null))
+            {
+                tiltDownButtonPressed = true;
+                buttonTiltDown.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    tiltDownButtonPressed = false;
+                    buttonTiltDown.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (tiltDownButtonReleased == false)
+                {
+                    tiltDownButtonReleased = true;
+                }
+                tiltDownButtonPressed = false;
+                buttonTiltDown.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+
+        private void buttonPanRight_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
+            if ((tiltUpButtonPressed == false)
+                && (zoomInButtonPressed == false)
+                && (zoomOutButtonPressed == false)
+                && (tiltDownButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (camPort != null))
+            {
+                panRightButtonPressed = true;
+                buttonPanRight.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    panRightButtonPressed = false;
+                    buttonPanRight.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (panRightButtonReleased == false)
+                {
+                    panRightButtonReleased = true;
+                }
+                panRightButtonPressed = false;
+                buttonPanRight.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
+            }
+        }
+
+        private void buttonPanLeft_Click(object sender, EventArgs e)
+        {
+            // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
+            if ((tiltUpButtonPressed == false)
+                && (zoomInButtonPressed == false)
+                && (zoomOutButtonPressed == false)
+                && (tiltDownButtonPressed == false)
+                && (panRightButtonPressed == false)
+                && (panLeftButtonPressed == false)
+                && (camPort != null))
+            {
+                panLeftButtonPressed = true;
+                buttonPanLeft.BackColor = Color.LightGreen;
+                if (!(isUcPowerCycled))
+                {
+                    MessageBox.Show("Please initialize microcontroller and communication before sending commands.");
+                    panLeftButtonPressed = false;
+                    buttonPanLeft.BackColor = SystemColors.Control;
+                    return;
+                }
+            }
+            else
+            {
+                if (panLeftButtonReleased == false)
+                {
+                    panLeftButtonReleased = true;
+                }
+                panLeftButtonPressed = false;
+                buttonPanLeft.BackColor = SystemColors.Control;
+                textBoxCmdString.Text = textBoxCmdStringCompleteText;
             }
         }
     }

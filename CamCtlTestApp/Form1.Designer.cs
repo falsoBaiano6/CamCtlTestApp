@@ -140,6 +140,7 @@ namespace CamCtlTestApp
             buttonTiltUp.TabIndex = 13;
             buttonTiltUp.Text = "Tilt Up";
             buttonTiltUp.UseVisualStyleBackColor = true;
+            buttonTiltUp.Click += buttonTiltUp_Click;
             // 
             // buttonTiltDown
             // 
@@ -150,6 +151,7 @@ namespace CamCtlTestApp
             buttonTiltDown.TabIndex = 12;
             buttonTiltDown.Text = "Tilt Down";
             buttonTiltDown.UseVisualStyleBackColor = true;
+            buttonTiltDown.Click += buttonTiltDown_Click;
             // 
             // buttonPanRight
             // 
@@ -160,6 +162,7 @@ namespace CamCtlTestApp
             buttonPanRight.TabIndex = 11;
             buttonPanRight.Text = "Pan Right";
             buttonPanRight.UseVisualStyleBackColor = true;
+            buttonPanRight.Click += buttonPanRight_Click;
             // 
             // buttonPanLeft
             // 
@@ -170,6 +173,7 @@ namespace CamCtlTestApp
             buttonPanLeft.TabIndex = 10;
             buttonPanLeft.Text = "Pan Left";
             buttonPanLeft.UseVisualStyleBackColor = true;
+            buttonPanLeft.Click += buttonPanLeft_Click;
             // 
             // groupBoxActiveCamera
             // 

@@ -50,6 +50,8 @@ namespace CamCtlTestApp
             groupBoxPrerequisites = new GroupBox();
             textBoxPrereqResponse = new TextBox();
             checkBoxUcPwrCycleComplete = new CheckBox();
+            comboBoxSetPanTiltSpeed = new ComboBox();
+            labelSetPanTiltSpeed = new Label();
             groupBoxFunctions.SuspendLayout();
             groupBoxActiveCamera.SuspendLayout();
             groupBoxPrerequisites.SuspendLayout();
@@ -117,6 +119,8 @@ namespace CamCtlTestApp
             // 
             // groupBoxFunctions
             // 
+            groupBoxFunctions.Controls.Add(labelSetPanTiltSpeed);
+            groupBoxFunctions.Controls.Add(comboBoxSetPanTiltSpeed);
             groupBoxFunctions.Controls.Add(buttonTiltUp);
             groupBoxFunctions.Controls.Add(buttonTiltDown);
             groupBoxFunctions.Controls.Add(buttonPanRight);
@@ -280,6 +284,26 @@ namespace CamCtlTestApp
             checkBoxUcPwrCycleComplete.UseVisualStyleBackColor = true;
             checkBoxUcPwrCycleComplete.CheckedChanged += checkBoxUcPwrCycleComplete_CheckedChanged;
             // 
+            // comboBoxSetPanTiltSpeed
+            // 
+            comboBoxSetPanTiltSpeed.FormattingEnabled = true;
+            comboBoxSetPanTiltSpeed.Items.AddRange(new object[] { "10", "20", "30", "40", "50", "60", "70", "80", "90" });
+            comboBoxSetPanTiltSpeed.Location = new Point(43, 253);
+            comboBoxSetPanTiltSpeed.Name = "comboBoxSetPanTiltSpeed";
+            comboBoxSetPanTiltSpeed.Size = new Size(64, 23);
+            comboBoxSetPanTiltSpeed.TabIndex = 14;
+            comboBoxSetPanTiltSpeed.SelectedIndexChanged += comboBoxSetPanTiltSpeed_SelectedIndexChanged;
+            // 
+            // labelSetPanTiltSpeed
+            // 
+            labelSetPanTiltSpeed.AutoSize = true;
+            labelSetPanTiltSpeed.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelSetPanTiltSpeed.Location = new Point(23, 219);
+            labelSetPanTiltSpeed.Name = "labelSetPanTiltSpeed";
+            labelSetPanTiltSpeed.Size = new Size(201, 25);
+            labelSetPanTiltSpeed.TabIndex = 15;
+            labelSetPanTiltSpeed.Text = "Set Pan/Tilt Speed (%):";
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -294,6 +318,7 @@ namespace CamCtlTestApp
             Controls.Add(labelResponseString);
             Name = "MainForm";
             groupBoxFunctions.ResumeLayout(false);
+            groupBoxFunctions.PerformLayout();
             groupBoxActiveCamera.ResumeLayout(false);
             groupBoxActiveCamera.PerformLayout();
             groupBoxPrerequisites.ResumeLayout(false);
@@ -324,5 +349,7 @@ namespace CamCtlTestApp
         private Button buttonPanLeft;
         private Button buttonTiltUp;
         private Button buttonTiltDown;
+        private ComboBox comboBoxSetPanTiltSpeed;
+        private Label labelSetPanTiltSpeed;
     }
 }

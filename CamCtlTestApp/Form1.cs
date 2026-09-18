@@ -47,6 +47,7 @@ namespace CamCtlTestApp
         public static string CMD_TILT_UP_STR = "U";
         public static string CMD_TILT_DOWN_STR = "D";
         public static string CMD_PAN_STOP_STR = "S";
+        public static string CMD_SET_PT_SPEED_STR = "T";
         public static string CMD_LANC_STR = "Z";
         public static string CMD_LANC_STOP_STR = "Y";
         public static string ZOOM_DIR_IN_STR = "2800";
@@ -88,28 +89,32 @@ namespace CamCtlTestApp
 
         // Private members
         public SerialPort camPort;
-        private bool isUcPowerCycled        = false;
-        private bool zoomInButtonPressed    = false;
-        private bool zoomInCmdSent          = false;
-        private bool zoomInButtonReleased   = false;
-        private bool zoomOutButtonPressed   = false;
-        private bool zoomOutCmdSent         = false;
-        private bool zoomOutButtonReleased  = false;
-        private bool zoomStopCmdSent        = false;
-        private bool tiltUpButtonPressed    = false;
-        private bool tiltUpCmdSent          = false;
-        private bool tiltUpButtonReleased   = false;
-        private bool tiltDownButtonPressed  = false;
-        private bool tiltDownCmdSent        = false;
+        private bool isUcPowerCycled = false;
+        private bool zoomInButtonPressed = false;
+        private bool zoomInCmdSent = false;
+        private bool zoomInButtonReleased = false;
+        private bool zoomOutButtonPressed = false;
+        private bool zoomOutCmdSent = false;
+        private bool zoomOutButtonReleased = false;
+        private bool zoomStopCmdSent = false;
+        private bool tiltUpButtonPressed = false;
+        private bool tiltUpCmdSent = false;
+        private bool tiltUpButtonReleased = false;
+        private bool tiltDownButtonPressed = false;
+        private bool tiltDownCmdSent = false;
         private bool tiltDownButtonReleased = false;
-        private bool panRightButtonPressed  = false;
-        private bool panRightCmdSent        = false;
+        private bool panRightButtonPressed = false;
+        private bool panRightCmdSent = false;
         private bool panRightButtonReleased = false;
-        private bool panLeftButtonPressed   = false;
-        private bool panLeftCmdSent         = false;
-        private bool panLeftButtonReleased  = false;
+        private bool panLeftButtonPressed = false;
+        private bool panLeftCmdSent = false;
+        private bool panLeftButtonReleased = false;
+        private int panTiltSpeedPct = 50; // Default to 50%
+        private bool panTiltSpeedCmdSent = false;
+        private bool panTiltSpeedChanged = false;
         private CancellationTokenSource _cts;
         private Task _workerTask;
+        private bool noButtonsPressed = true;
         private bool isComInitialized = false;
 
 
@@ -350,7 +355,6 @@ namespace CamCtlTestApp
                     }
 
                     if (panLeftButtonReleased)
-
                     {
                         if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
                         {
@@ -358,8 +362,24 @@ namespace CamCtlTestApp
                             camIdStr = activeCamId;
                             cmdCodeStr = CMD_PAN_STOP_STR;
                             dataStr = "";
-                            panLeftButtonReleased = false;
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                            panLeftButtonReleased = false;
+                        }
+                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
+                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
+                    }
+
+                    if (panTiltSpeedChanged)
+                    {
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        {
+                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
+                            camIdStr = activeCamId;
+                            cmdCodeStr = CMD_SET_PT_SPEED_STR;
+                            dataStr = panTiltSpeedPct.ToString();
+                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
+                            panTiltSpeedCmdSent = true; // send the command only once per button press
+                            panTiltSpeedChanged = false; // reset the flag after sending the command
                         }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
@@ -644,7 +664,7 @@ namespace CamCtlTestApp
         private void buttonCam1ZoomIn_Click(object sender, EventArgs e)
         {
             // if no buttons are pressed and the serial port is initialized, then set the zoom in button as pressed and change its color to light green
-            if(camPort != null)
+            if (camPort != null)
             {
                 if ((zoomInButtonPressed == false)
                     && (zoomOutButtonPressed == false)
@@ -788,13 +808,16 @@ namespace CamCtlTestApp
         {
             if (camPort != null)
             {
-                // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
-                if ((tiltUpButtonPressed == false)
-                    && (zoomInButtonPressed == false)
+                noButtonsPressed = 
+                       (zoomInButtonPressed == false)
                     && (zoomOutButtonPressed == false)
+                    && (tiltUpButtonPressed == false)
                     && (tiltDownButtonPressed == false)
                     && (panRightButtonPressed == false)
-                    && (panLeftButtonPressed == false))
+                    && (panLeftButtonPressed == false);
+
+                // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
+                if (noButtonsPressed)
                 {
                     panRightButtonPressed = true;
                     buttonPanRight.BackColor = Color.LightGreen;
@@ -825,12 +848,7 @@ namespace CamCtlTestApp
             if (camPort != null)
             {
                 // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
-                if ((tiltUpButtonPressed == false)
-                && (zoomInButtonPressed == false)
-                && (zoomOutButtonPressed == false)
-                && (tiltDownButtonPressed == false)
-                && (panRightButtonPressed == false)
-                && (panLeftButtonPressed == false))
+                if (noButtonsPressed)
                 {
                     panLeftButtonPressed = true;
                     buttonPanLeft.BackColor = Color.LightGreen;
@@ -854,6 +872,26 @@ namespace CamCtlTestApp
                 panLeftButtonPressed = false;
                 buttonPanLeft.BackColor = SystemColors.Control;
                 return;
+            }
+        }
+
+        private void comboBoxSetPanTiltSpeed_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (comboBoxSetPanTiltSpeed.SelectedItem != null)
+            {
+                if (camPort != null)
+                {
+                    // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
+                    if (noButtonsPressed)
+                    {
+                        string selectedSpeed = comboBoxSetPanTiltSpeed.SelectedItem.ToString();
+                        if(selectedSpeed != null)
+                        {
+                            panTiltSpeedPct = int.Parse(selectedSpeed);
+                            panTiltSpeedChanged = true;
+                        }
+                    }
+                }
             }
         }
     }

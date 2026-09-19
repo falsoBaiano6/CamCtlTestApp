@@ -847,6 +847,14 @@ namespace CamCtlTestApp
         {
             if (camPort != null)
             {
+                noButtonsPressed =
+                       (zoomInButtonPressed == false)
+                    && (zoomOutButtonPressed == false)
+                    && (tiltUpButtonPressed == false)
+                    && (tiltDownButtonPressed == false)
+                    && (panRightButtonPressed == false)
+                    && (panLeftButtonPressed == false);
+
                 // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
                 if (noButtonsPressed)
                 {
@@ -872,26 +880,6 @@ namespace CamCtlTestApp
                 panLeftButtonPressed = false;
                 buttonPanLeft.BackColor = SystemColors.Control;
                 return;
-            }
-        }
-
-        private void comboBoxSetPanTiltSpeed_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (comboBoxSetPanTiltSpeed.SelectedItem != null)
-            {
-                if (camPort != null)
-                {
-                    // if no buttons are pressed and the serial port is initialized, then set the pan right button as pressed and change its color to light green
-                    if (noButtonsPressed)
-                    {
-                        string selectedSpeed = comboBoxSetPanTiltSpeed.SelectedItem.ToString();
-                        if(selectedSpeed != null)
-                        {
-                            panTiltSpeedPct = int.Parse(selectedSpeed);
-                            panTiltSpeedChanged = true;
-                        }
-                    }
-                }
             }
         }
     }

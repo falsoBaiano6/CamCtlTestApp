@@ -111,7 +111,6 @@ namespace CamCtlTestApp
         private bool panLeftButtonReleased = false;
         private int panTiltSpeedPct = 50; // Default to 50%
         private bool panTiltSpeedCmdSent = false;
-        private bool panTiltSpeedChanged = false;
         private CancellationTokenSource _cts;
         private Task _workerTask;
         private bool noButtonsPressed = true;
@@ -324,7 +323,7 @@ namespace CamCtlTestApp
 
                     if (panRightButtonReleased)
                     {
-                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE) && (panRightCmdSent))
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
                         {
                             // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
                             camIdStr = activeCamId;
@@ -340,7 +339,7 @@ namespace CamCtlTestApp
                     // Pan Left
                     if (panLeftButtonPressed)
                     {
-                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
+                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE) && (!panLeftCmdSent))
                         {
                             camIdStr = activeCamId;
                             cmdCodeStr = CMD_PAN_LEFT_STR;
@@ -364,22 +363,6 @@ namespace CamCtlTestApp
                             dataStr = "";
                             UpdateComState(camIdStr, cmdCodeStr, dataStr);
                             panLeftButtonReleased = false;
-                        }
-                        ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
-                        ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
-                    }
-
-                    if (panTiltSpeedChanged)
-                    {
-                        if ((currentComState == ComState.COM_IDLE) && (currentZoomState == ZoomState.ZOOM_IDLE))
-                        {
-                            // Wait until the currentComState is IDLE and the currentZoomState is ZOOM_IDLE before resetting the zoom state to ZOOM_IDLE
-                            camIdStr = activeCamId;
-                            cmdCodeStr = CMD_SET_PT_SPEED_STR;
-                            dataStr = panTiltSpeedPct.ToString();
-                            UpdateComState(camIdStr, cmdCodeStr, dataStr);
-                            panTiltSpeedCmdSent = true; // send the command only once per button press
-                            panTiltSpeedChanged = false; // reset the flag after sending the command
                         }
                         ((IProgress<string>)cmdProgress).Report(textBoxCmdStringText);
                         ((IProgress<string>)rspProgress).Report(textBoxResponseStringText);
